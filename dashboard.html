@@ -1,0 +1,336 @@
+<!-- 
+CONFIGURATION: Replace all YOUR_* placeholders with actual values before deploying.
+Never commit real API keys to source control!
+Use Cloudflare Pages environment variables or a build-time substitution step.
+See README.md for setup instructions.
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard — Soccer Prediction Hub</title>
+  <meta name="description" content="Your prediction dashboard — points, rank, history, and upcoming matches">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --color-bg: #f8fafc; --color-surface: #fff; --color-border: #e2e8f0; --color-text: #1e293b;
+      --color-text-muted: #64748b; --color-primary: #2563eb; --color-primary-hover: #1d4ed8;
+      --color-success: #16a34a; --color-error: #dc2626; --color-warning: #d97706;
+      --shadow-sm: 0 1px 2px rgba(0,0,0,.05); --shadow-md: 0 4px 6px -1px rgba(0,0,0,.1);
+      --shadow-lg: 0 10px 15px -3px rgba(0,0,0,.1); --radius-sm: 6px; --radius-md: 10px; --radius-lg: 16px;
+      --transition: 150ms ease; --container-max: 1000px; --header-h: 64px;
+    }
+    *{box-sizing:border-box;margin:0;padding:0} html{font-size:16px}
+    body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--color-bg);color:var(--color-text);line-height:1.6;min-height:100vh;display:flex;flex-direction:column}
+    a{color:var(--color-primary);text-decoration:none} a:hover{text-decoration:underline}
+    button{font-family:inherit;cursor:pointer;border:none;background:none}
+    .site-header{position:sticky;top:0;z-index:100;background:var(--color-surface);border-bottom:1px solid var(--color-border);height:var(--header-h)}
+    .site-header__inner{max-width:var(--container-max);margin:0 auto;padding:0 24px;height:100%;display:flex;align-items:center;justify-content:space-between;gap:16px}
+    .site-logo{display:flex;align-items:center;gap:10px;font-weight:700;font-size:1.25rem;color:var(--color-text);text-decoration:none}
+    .site-logo svg{width:32px;height:32px;color:var(--color-primary)}
+    .site-nav{display:flex;align-items:center;gap:24px}
+    .nav-link{font-weight:500;color:var(--color-text-muted);font-size:.9375rem}
+    .nav-link:hover,.nav-link.is-active{color:var(--color-text);text-decoration:none}
+    .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:10px 20px;border-radius:var(--radius-md);font-weight:600;font-size:.9375rem;transition:all var(--transition);white-space:nowrap}
+    .btn--primary{background:var(--color-primary);color:#fff}
+    .btn--primary:hover{background:var(--color-primary-hover)}
+    .btn--ghost{background:transparent;color:var(--color-text);border:1px solid var(--color-border)}
+    .btn--ghost:hover{background:var(--color-bg);border-color:var(--color-text)}
+    .btn--sm{padding:8px 16px;font-size:.875rem}
+    .main{flex:1;padding:40px 24px}
+    .container{max-width:var(--container-max);margin:0 auto}
+    .card{background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-lg);box-shadow:var(--shadow-sm)}
+    .card-header{padding:20px 24px;border-bottom:1px solid var(--color-border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
+    .card-body{padding:24px}
+    .section-title{font-size:1.25rem;font-weight:700;margin-bottom:16px;display:flex;align-items:center;gap:10px}
+    .section-title svg{width:20px;height:20px;color:var(--color-primary)}
+    .grid{display:grid;gap:24px}
+    .grid-3{grid-template-columns:repeat(3,1fr)}
+    .grid-2{grid-template-columns:repeat(2,1fr)}
+    @media(max-width:900px){.grid-3{grid-template-columns:1fr}}
+    @media(max-width:600px){.grid-2{grid-template-columns:1fr}}
+
+    /* Profile Card */
+    .profile-card{display:flex;flex-direction:column;align-items:center;text-align:center;padding:32px 24px;gap:16px}
+    .profile-avatar{width:96px;height:96px;border-radius:50%;background:linear-gradient(135deg,var(--color-primary),#7c3aed);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:2rem}
+    .profile-name{font-size:1.5rem;font-weight:700}
+    .profile-meta{display:flex;flex-wrap:wrap;justify-content:center;gap:16px;color:var(--color-text-muted);font-size:.875rem}
+    .profile-meta span{display:flex;align-items:center;gap:6px}
+    .profile-meta svg{width:16px;height:16px}
+    .profile-badges{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+    .badge{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:999px;font-size:.75rem;font-weight:600}
+    .badge--premium{background:#fef3c7;color:#92400e}
+    .badge--country{background:#dbeafe;color:#1e40af}
+    .badge--streak{background:#fef3c7;color:#92400e}
+
+    /* Stats */
+    .stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+    @media(max-width:600px){.stats-grid{grid-template-columns:1fr}}
+    .stat-card{background:var(--color-bg);border:1px solid var(--color-border);border-radius:var(--radius-md);padding:20px;text-align:center}
+    .stat-value{font-size:2.5rem;font-weight:700;font-variant-numeric:tabular-nums;color:var(--color-text);line-height:1.2}
+    .stat-label{font-size:.75rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--color-text-muted);margin-top:4px}
+    .stat-card.points .stat-value{color:var(--color-primary)}
+    .stat-card.rank .stat-value{color:var(--color-warning)}
+    .stat-card.streak .stat-value{color:var(--color-success)}
+
+    /* Tables */
+    .table-wrapper{overflow-x:auto}
+    table{width:100%;border-collapse:collapse;font-size:.9375rem}
+    th,td{padding:12px 16px;text-align:left;border-bottom:1px solid var(--color-border)}
+    th{background:var(--color-bg);font-weight:600;color:var(--color-text-muted);font-size:.75rem;text-transform:uppercase;letter-spacing:.05em}
+    tbody tr:last-child td{border-bottom:none}
+    tbody tr:hover{background:#fbfdff}
+    .status-badge{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;font-size:.75rem;font-weight:600}
+    .status-pending{background:#fef3c7;color:#92400e}
+    .status-correct{background:#dcfce7;color:#166534}
+    .status-wrong{background:#fee2e2;color:#991b1b}
+    .match-link{display:flex;align-items:center;gap:10px;color:var(--color-text);font-weight:500}
+    .match-link:hover{color:var(--color-primary);text-decoration:none}
+    .match-teams{display:flex;align-items:center;gap:8px}
+    .match-flag{width:20px;height:15px;border-radius:2px}
+    .score-cell{font-weight:600;font-variant-numeric:tabular-nums;text-align:right}
+    .points-pos{color:var(--color-success)} .points-neg{color:var(--color-error)} .points-zero{color:var(--color-text-muted)}
+
+    /* Upcoming Matches */
+    .upcoming-list{display:flex;flex-direction:column;gap:12px}
+    .upcoming-item{display:flex;align-items:center;justify-content:space-between;padding:16px;background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-md);transition:box-shadow var(--transition)}
+    .upcoming-item:hover{box-shadow:var(--shadow-md)}
+    .upcoming-info{display:flex;align-items:center;gap:16px}
+    .upcoming-date{font-size:.75rem;font-weight:600;color:var(--color-text-muted);text-transform:uppercase;letter-spacing:.05em;white-space:nowrap}
+    .upcoming-teams{display:flex;align-items:center;gap:10px}
+    .upcoming-flag{width:28px;height:21px;border-radius:3px}
+    .upcoming-vs{color:var(--color-text-muted);font-size:.875rem}
+    .upcoming-action{display:flex;align-items:center;gap:8px}
+    .btn-link{color:var(--color-primary);font-weight:600;font-size:.875rem;padding:8px 16px;border:1px solid var(--color-primary);border-radius:var(--radius-sm);transition:all var(--transition)}
+    .btn-link:hover{background:var(--color-primary);color:#fff}
+
+    /* Empty States */
+    .empty-state{text-align:center;padding:48px 24px;color:var(--color-text-muted)}
+    .empty-state svg{width:64px;height:64px;margin-bottom:16px;opacity:.5}
+    .empty-state h3{font-size:1.125rem;font-weight:600;margin-bottom:8px;color:var(--color-text)}
+
+    .loading{display:flex;align-items:center;justify-content:center;padding:40px;color:var(--color-text-muted)}
+    .loading svg{width:24px;height:24px;animation:spin 1s linear infinite;margin-right:12px}
+    @keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+
+    .site-footer{padding:32px 24px;border-top:1px solid var(--color-border);background:var(--color-surface)}
+    .site-footer__inner{max-width:var(--container-max);margin:0 auto;text-align:center;color:var(--color-text-muted);font-size:.875rem}
+
+    .modal-overlay{position:fixed;inset:0;background:rgba(15,23,42,.6);z-index:1000;display:flex;align-items:center;justify-content:center;padding:24px;opacity:0;visibility:hidden;transition:all var(--transition)}
+    .modal-overlay.is-open{opacity:1;visibility:visible}
+    .modal{background:var(--color-surface);border-radius:var(--radius-lg);box-shadow:var(--shadow-lg);max-width:420px;width:100%;padding:32px;transform:translateY(20px);transition:transform var(--transition)}
+    .modal-overlay.is-open .modal{transform:translateY(0)}
+    .modal-title{font-size:1.5rem;font-weight:700;margin-bottom:8px;text-align:center}
+    .modal-subtitle{text-align:center;color:var(--color-text-muted);margin-bottom:24px}
+    .modal-form{display:flex;flex-direction:column;gap:16px}
+    .form-group{display:flex;flex-direction:column;gap:6px}
+    .form-label{font-size:.875rem;font-weight:500;color:var(--color-text)}
+    .form-input{padding:12px 16px;border:1px solid var(--color-border);border-radius:var(--radius-md);font-size:1rem;transition:border-color var(--transition)}
+    .form-input:focus{outline:none;border-color:var(--color-primary)}
+    .form-error{color:var(--color-error);font-size:.8125rem;min-height:18px}
+    .modal-actions{display:flex;gap:12px;margin-top:8px}.modal-actions .btn{flex:1}
+    .modal-switch{text-align:center;margin-top:16px;font-size:.9375rem;color:var(--color-text-muted)}.modal-switch a{font-weight:600}
+    .user-avatar{width:32px;height:32px;border-radius:50%;background:var(--color-primary);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:.875rem}
+  </style>
+</head>
+<body>
+  <script src="https://static.memberstack.com/scripts/v1/memberstack-dom.js" data-memberstack-app="YOUR_API_KEY_HERE" async></script>
+
+  <header class="site-header">
+    <div class="site-header__inner">
+      <a href="index.html" class="site-logo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 0 0 20M12 2a10 10 0 0 1 0 20M2 12a10 10 0 0 0 20 0M2 12a10 10 0 0 1 20 0"/><path d="M8 12l2 2 4-4" stroke-linecap="round" stroke-linejoin="round"/></svg>Soccer Prediction Hub</a>
+      <nav class="site-nav"><a href="index.html" class="nav-link">Leaderboard</a><a href="match.html" class="nav-link">Matches</a><a href="dashboard.html" class="nav-link is-active">Dashboard</a></nav>
+      <div id="auth-area"><button class="btn btn--ghost btn--sm" id="login-btn" style="display:none">Log In</button><button class="btn btn--primary btn--sm" id="signup-btn" style="display:none">Sign Up</button><div class="user-menu" id="user-menu" style="display:none"><div class="user-menu__trigger"><div class="user-avatar" id="user-avatar"></div><span class="user-menu__name" id="user-name"></span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></div><div class="user-menu__dropdown"><a href="#" class="user-menu__item" id="logout-btn">Log Out</a></div></div></div>
+    </div>
+  </header>
+
+  <main class="main">
+    <div class="container">
+      <header style="margin-bottom:32px"><h1 style="font-size:2rem;font-weight:700;margin-bottom:8px">Dashboard</h1><p style="color:var(--color-text-muted)">Track your predictions, rank, and upcoming matches</p></header>
+
+      <div class="loading" id="loading-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10" stroke-opacity=".25"/><path d="M12 2a10 10 0 0 1 10 10" stroke-linecap="round"/></svg>Loading dashboard…</div>
+      <div id="dashboard-content" style="display:none">
+        <div class="grid grid-3" style="margin-bottom:32px">
+          <article class="card profile-card">
+            <div class="profile-avatar" id="user-avatar-large"></div>
+            <h2 class="profile-name" id="display-name"></h2>
+            <div class="profile-meta">
+              <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg><span id="user-email"></span></span>
+              <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg><span id="user-country"></span></span>
+              <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/></svg>Member since <span id="member-since"></span></span>
+            </div>
+            <div class="profile-badges" id="user-badges"></div>
+          </article>
+          <article class="card stat-card points"><div class="stat-value" id="stat-points">—</div><div class="stat-label">Total Points</div></article>
+          <article class="card stat-card rank"><div class="stat-value" id="stat-rank">—</div><div class="stat-label">Global Rank</div></article>
+        </div>
+
+        <div class="grid grid-2" style="margin-bottom:32px">
+          <article class="card"><div class="card-header"><h2 class="section-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>Prediction History</h2></div><div class="card-body"><div class="table-wrapper"><table><thead><tr><th>Match</th><th>Your Pick</th><th>Actual</th><th class="score-cell">Points</th><th>Status</th></tr></thead><tbody id="history-body"></tbody></table></div><div class="empty-state" id="history-empty" style="display:none"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg><h3>No Predictions Yet</h3><p>Your prediction history will appear here</p></div></div></article>
+
+          <article class="card"><div class="card-header"><h2 class="section-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/></svg>Upcoming Matches</h2></div><div class="card-body"><div class="upcoming-list" id="upcoming-list"></div><div class="empty-state" id="upcoming-empty" style="display:none"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg><h3>No Upcoming Matches</h3><p>No matches with open predictions at the moment</p></div></div></article>
+        </div>
+
+        <article class="card" style="margin-top:24px"><div class="card-header"><h2 class="section-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>Premium Features</h2></div><div class="card-body"><div id="premium-area"></div></article>
+      </div>
+    </div>
+  </main>
+
+<footer class="site-footer"><div class="site-footer__inner"><p>Soccer Prediction Hub © 2026 — Built with Memberstack + Xano + Cloudflare Pages</p></div></footer>
+
+<div class="modal-overlay" id="auth-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title" hidden>
+  <div class="modal"><h2 id="modal-title" class="modal-title">Welcome Back</h2><p class="modal-subtitle">Sign in to access your dashboard</p><form class="modal-form" id="auth-form" novalidate><input type="hidden" name="mode" value="login"><div class="form-group"><label for="auth-email" class="form-label">Email</label><input type="email" id="auth-email" name="email" class="form-input" required autocomplete="email" placeholder="you@example.com"><span class="form-error" id="email-error"></span></div><div class="form-group"><label for="auth-password" class="form-label">Password</label><input type="password" id="auth-password" name="password" class="form-input" required autocomplete="current-password" placeholder="••••••••"><span class="form-error" id="password-error"></span></div><div class="modal-actions"><button type="button" class="btn btn--ghost" id="switch-to-signup">Sign Up Instead</button><button type="submit" class="btn btn--primary">Sign In</button></div></form><p class="modal-switch"><a href="#" id="forgot-link">Forgot password?</a></p></div>
+</div>
+
+<script>
+const XANO_BASE='YOUR_API_KEY_HERE';
+const XANO_KEY='YOUR_API_KEY_HERE';
+const MS_PUBLIC_KEY='YOUR_API_KEY_HERE';
+
+let memberstack=null,currentUser=null;
+
+async function xanoFetch(path,opts={}){
+  const url=XANO_BASE+path,headers={'Authorization':'Bearer '+XANO_KEY,'Content-Type':'application/json',...opts.headers};
+  const resp=await fetch(url,{...opts,headers});
+  if(!resp.ok)throw new Error((await resp.json().catch(()=>({}))).message||`HTTP ${resp.status}`);
+  return resp.json();
+}
+
+async function initMemberstack(){
+  await new Promise(r=>{if(window.$memberstackDom)return r();const c=setInterval(()=>{if(window.$memberstackDom){clearInterval(c);r();}},100);});
+  memberstack=window.$memberstackDom;await memberstack.init(MS_PUBLIC_KEY).catch(console.error);
+  const m=await memberstack.getCurrentMember();
+  if(m){
+    currentUser={id:m.id,email:m.auth?.email,username:m.customFields?.username,country_code:m.customFields?.country_code,is_premium:m.planConnections?.some(p=>p.active&&p.type==='PAID'),createdAt:m.createdAt};
+    updateAuthUI();await loadDashboard();
+  }else{showAuthRequired();}
+}
+
+function updateAuthUI(){
+  document.getElementById('login-btn').style.display='none';
+  document.getElementById('signup-btn').style.display='none';
+  document.getElementById('user-menu').style.display='block';
+  document.getElementById('user-avatar').textContent=(currentUser.username||currentUser.email||'U')[0].toUpperCase();
+  document.getElementById('user-name').textContent=currentUser.username||currentUser.email;
+  document.getElementById('user-avatar-large').textContent=(currentUser.username||currentUser.email||'U')[0].toUpperCase();
+  document.getElementById('display-name').textContent=currentUser.username||'Predictor';
+  document.getElementById('user-email').textContent=currentUser.email;
+  document.getElementById('user-country').textContent=currentUser.country_code||'—';
+  document.getElementById('member-since').textContent=currentUser.createdAt?new Date(currentUser.createdAt).toLocaleDateString():'—';
+  document.getElementById('user-badges').innerHTML=`
+    ${currentUser.is_premium?'<span class="badge badge--premium"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>Premium</span>':''}
+    <span class="badge badge--country"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>${currentUser.country_code||'—'}</span>
+  `;
+  document.getElementById('logout-btn').addEventListener('click',handleLogout);
+}
+
+function showAuthRequired(){
+  document.getElementById('loading-state').style.display='none';
+  document.getElementById('dashboard-content').innerHTML=`
+    <div style="text-align:center;padding:60px 24px">
+      <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom:16px;color:var(--color-text-muted)"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      <h2>Sign In Required</h2>
+      <p style="color:var(--color-text-muted);margin:16px 0">Please sign in to access your dashboard</p>
+      <button class="btn btn--primary" id="login-cta">Sign In / Sign Up</button>
+    </div>`;
+  document.getElementById('dashboard-content').style.display='block';
+  document.getElementById('login-cta').addEventListener('click',()=>{setFormMode('login');showAuthModal();});
+}
+
+async function loadDashboard(){
+  try{
+    const[userRes,predRes,upcomingRes]=await Promise.all([
+      xanoFetch('/users/'+currentUser.id),
+      xanoFetch('/predictions?user_id='+currentUser.id+'&limit=50'),
+      xanoFetch('/predictions?user_id='+currentUser.id+'&status=pending&limit=20')
+    ]);
+    const user=userRes,preds=predRes.items||[],upcoming=upcomingRes.items||[];
+    renderStats(user);
+    renderHistory(preds);
+    renderUpcoming(upcoming);
+    renderPremium();
+    document.getElementById('loading-state').style.display='none';
+    document.getElementById('dashboard-content').style.display='block';
+  }catch(e){console.error(e);showAuthRequired();}
+}
+
+function renderStats(user){
+  document.getElementById('stat-points').textContent=user.points_total||0;
+  const rankGlobal=user.rank_global||'—',rankCountry=user.rank_country||'—';
+  document.getElementById('stat-rank').textContent=rankGlobal!=='—'?'#'+rankGlobal+(rankCountry!=='—'?' (#'+rankCountry+' in '+currentUser.country_code+')':''):'—';
+  document.getElementById('stat-streak').textContent=user.streak||0;
+}
+
+function renderHistory(preds){
+  const body=document.getElementById('history-body'),empty=document.getElementById('history-empty');
+  if(!preds.length){body.innerHTML='';empty.style.display='block';return;}
+  empty.style.display='none';
+  body.innerHTML=preds.map(p=>{
+    const statusClass=p.status||'pending';
+    const pickLabels={home:'Home Win',draw:'Draw',away:'Away Win'};
+    const matchName=p.match_id||'Match '+p.id;
+    const points=p.points_earned||0;
+    return `<tr><td><span class="match-link"><span class="match-teams">${matchName}</span></span></td><td>${pickLabels[p.predicted_winner]||p.predicted_winner}</td><td>${p.actual_result||'—'}</td><td class="score-cell ${points>0?'points-pos':points<0?'points-neg':'points-zero'}">${points>0?'+':''}${points}</td><td><span class="status-badge status-${statusClass}">${statusClass.charAt(0).toUpperCase()+statusClass.slice(1)}</span></td></tr>`;
+  }).join('');
+}
+
+function renderUpcoming(upcoming){
+  const list=document.getElementById('upcoming-list'),empty=document.getElementById('upcoming-empty');
+  if(!upcoming.length){list.innerHTML='';empty.style.display='block';return;}
+  empty.style.display='none';
+  list.innerHTML=upcoming.map(p=>{
+    const matchId=p.match_id;
+    return `<div class="upcoming-item"><div class="upcoming-info"><span class="upcoming-date">${p.match_date?new Date(p.match_date).toLocaleDateString():'TBA'}</span><div class="upcoming-teams"><span class="upcoming-teams">${matchId}</span></div></div><div class="upcoming-action"><a href="match.html?id=${matchId}" class="btn-link">Predict</a></div></div>`;
+  }).join('');
+}
+
+function renderPremium(){
+  const area=document.getElementById('premium-area');
+  if(currentUser.is_premium){
+    area.innerHTML=`<div style="background:#fef3c7;border:1px solid #fcd34d;border-radius:var(--radius-md);padding:24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px"><div><h3 style="font-weight:600;color:#92400e">Premium Active</h3><p style="color:#b45309;font-size:.875rem;margin-top:4px">Ad-free, AI stats, exclusive newsletter</p></div><span class="badge badge--premium" style="font-size:.875rem;padding:8px 16px">Premium Member</span></div>`;
+  }else{
+    area.innerHTML=`<div style="background:var(--color-bg);border:1px solid var(--color-border);border-radius:var(--radius-md);padding:24px;text-align:center"><h3 style="font-weight:600;margin-bottom:8px">Upgrade to Premium</h3><p style="color:var(--color-text-muted);margin-bottom:16px">$5.99/month — Ad-free, advanced AI stats, exclusive picks newsletter, premium badge</p><button class="btn btn--primary" id="upgrade-btn">Upgrade Now</button></div>`;
+    document.getElementById('upgrade-btn')?.addEventListener('click',()=>alert('Stripe checkout integration coming soon'));
+  }
+}
+
+let authMode='login';
+function showAuthModal(){document.getElementById('auth-modal').hidden=false;requestAnimationFrame(()=>document.getElementById('auth-modal').classList.add('is-open'));}
+function hideAuthModal(){document.getElementById('auth-modal').classList.remove('is-open');setTimeout(()=>document.getElementById('auth-modal').hidden=true,150);}
+function setFormMode(mode){authMode=mode;const t=document.getElementById('modal-title'),s=document.querySelector('.modal-subtitle'),sb=document.getElementById('auth-form').querySelector('button[type=submit]'),sw=document.getElementById('switch-to-signup');
+  if(mode==='login'){t.textContent='Welcome Back';s.textContent='Sign in to access your dashboard';sb.textContent='Sign In';sw.textContent='Sign Up Instead';}
+  else{t.textContent='Create Account';s.textContent='Join the competition — predict matches and win';sb.textContent='Create Account';sw.textContent='Sign In Instead';}
+  document.getElementById('auth-form').reset();document.querySelectorAll('.form-error').forEach(e=>e.textContent='');}
+
+async function handleAuthSubmit(e){
+  e.preventDefault();
+  const fd=new FormData(e.target),email=fd.get('email').trim(),pwd=fd.get('password'),mode=fd.get('mode');
+  if(!email||!pwd)return;
+  try{
+    if(mode==='login'){await memberstack.loginMemberEmailPassword(email,pwd);}
+    else{const u=prompt('Username:'),c=prompt('Country code (BR,FR,US...):').toUpperCase();if(!u||!c)return;await memberstack.signupMemberEmailPassword(email,pwd,{username:u,country_code:c});}
+    const m=await memberstack.getCurrentMember();
+    currentUser={id:m.id,email:m.auth?.email,username:m.customFields?.username,country_code:m.customFields?.country_code,is_premium:m.planConnections?.some(p=>p.active&&p.type==='PAID'),createdAt:m.createdAt};
+    updateAuthUI();hideAuthModal();await loadDashboard();
+  }catch(err){alert('Auth failed: '+err.message);}
+}
+
+async function handleLogout(){await memberstack.logout();currentUser=null;document.getElementById('login-btn').style.display='inline-flex';document.getElementById('signup-btn').style.display='inline-flex';document.getElementById('user-menu').style.display='none';showAuthRequired();}
+
+document.addEventListener('DOMContentLoaded',async()=>{
+  await initMemberstack();
+  document.getElementById('login-btn').addEventListener('click',()=>{setFormMode('login');showAuthModal();});
+  document.getElementById('signup-btn').addEventListener('click',()=>{setFormMode('signup');showAuthModal();});
+  document.getElementById('auth-modal').addEventListener('click',e=>{if(e.target===document.getElementById('auth-modal'))hideAuthModal();});
+  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!document.getElementById('auth-modal').hidden)hideAuthModal();});
+  document.getElementById('switch-to-signup').addEventListener('click',e=>{e.preventDefault();setFormMode(authMode==='login'?'signup':'login');});
+  document.getElementById('auth-form').addEventListener('submit',handleAuthSubmit);
+  document.getElementById('forgot-link')?.addEventListener('click',e=>{e.preventDefault();alert('Password reset not implemented yet');});
+});
+</script>
+<style>.modal-overlay{position:fixed;inset:0;background:rgba(15,23,42,.6);z-index:1000;display:flex;align-items:center;justify-content:center;padding:24px;opacity:0;visibility:hidden;transition:all 150ms ease}.modal-overlay.is-open{opacity:1;visibility:visible}.modal{background:#fff;border-radius:16px;box-shadow:0 25px 50px -12px rgba(0,0,0,.25);max-width:420px;width:100%;padding:32px;transform:translateY(20px);transition:transform 150ms ease}.modal-overlay.is-open .modal{transform:translateY(0)}.modal-title{font-size:1.5rem;font-weight:700;margin-bottom:8px;text-align:center}.modal-subtitle{text-align:center;color:#64748b;margin-bottom:24px}.modal-form{display:flex;flex-direction:column;gap:16px}.form-group{display:flex;flex-direction:column;gap:6px}.form-label{font-size:.875rem;font-weight:500;color:#1e293b}.form-input{padding:12px 16px;border:1px solid #e2e8f0;border-radius:10px;font-size:1rem;transition:border-color 150ms ease}.form-input:focus{outline:none;border-color:#2563eb}.form-error{color:#dc2626;font-size:.8125rem;min-height:18px}.modal-actions{display:flex;gap:12px;margin-top:8px}.modal-actions .btn{flex:1}.modal-switch{text-align:center;margin-top:16px;font-size:.9375rem;color:#64748b}.modal-switch a{font-weight:600}</style>
+</body>
+</html>

@@ -1,0 +1,307 @@
+<!-- 
+CONFIGURATION: Replace all YOUR_* placeholders with actual values before deploying.
+Never commit real API keys to source control!
+Use Cloudflare Pages environment variables or a build-time substitution step.
+See README.md for setup instructions.
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title id="match-title">Match Preview — Soccer Prediction Hub</title>
+  <meta name="description" id="match-desc" content="AI match preview, prediction, and community picks">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --color-bg: #f8fafc; --color-surface: #fff; --color-border: #e2e8f0; --color-text: #1e293b;
+      --color-text-muted: #64748b; --color-primary: #2563eb; --color-primary-hover: #1d4ed8;
+      --color-success: #16a34a; --color-error: #dc2626; --color-warning: #d97706;
+      --shadow-sm: 0 1px 2px rgba(0,0,0,.05); --shadow-md: 0 4px 6px -1px rgba(0,0,0,.1);
+      --shadow-lg: 0 10px 15px -3px rgba(0,0,0,.1); --radius-sm: 6px; --radius-md: 10px; --radius-lg: 16px;
+      --transition: 150ms ease; --container-max: 900px; --header-h: 64px;
+    }
+    *{box-sizing:border-box;margin:0;padding:0} html{font-size:16px}
+    body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--color-bg);color:var(--color-text);line-height:1.7;min-height:100vh;display:flex;flex-direction:column}
+    a{color:var(--color-primary);text-decoration:none} a:hover{text-decoration:underline}
+    button{font-family:inherit;cursor:pointer;border:none;background:none}
+    .site-header{position:sticky;top:0;z-index:100;background:var(--color-surface);border-bottom:1px solid var(--color-border);height:var(--header-h)}
+    .site-header__inner{max-width:var(--container-max);margin:0 auto;padding:0 24px;height:100%;display:flex;align-items:center;justify-content:space-between;gap:16px}
+    .site-logo{display:flex;align-items:center;gap:10px;font-weight:700;font-size:1.25rem;color:var(--color-text);text-decoration:none}
+    .site-logo svg{width:32px;height:32px;color:var(--color-primary)}
+    .site-nav{display:flex;align-items:center;gap:24px}
+    .nav-link{font-weight:500;color:var(--color-text-muted);font-size:.9375rem}
+    .nav-link:hover,.nav-link.is-active{color:var(--color-text);text-decoration:none}
+    .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:10px 20px;border-radius:var(--radius-md);font-weight:600;font-size:.9375rem;transition:all var(--transition);white-space:nowrap}
+    .btn--primary{background:var(--color-primary);color:#fff}
+    .btn--primary:hover{background:var(--color-primary-hover)}
+    .btn--ghost{background:transparent;color:var(--color-text);border:1px solid var(--color-border)}
+    .btn--ghost:hover{background:var(--color-bg);border-color:var(--color-text)}
+    .btn--sm{padding:8px 16px;font-size:.875rem}
+    .btn--disabled{opacity:.5;cursor:not-allowed}
+    .main{flex:1;padding:40px 24px}
+    .container{max-width:var(--container-max);margin:0 auto}
+    .card{background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-lg);box-shadow:var(--shadow-sm)}
+    .card-header{padding:20px 24px;border-bottom:1px solid var(--color-border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
+    .card-body{padding:24px}
+    .match-hero{display:flex;align-items:center;justify-content:center;gap:16px;flex-wrap:wrap;margin-bottom:8px}
+    .team{display:flex;flex-direction:column;align-items:center;gap:4px}
+    .team-flag{width:64px;height:48px;border-radius:4px;object-fit:cover;box-shadow:var(--shadow-sm)}
+    .team-name{font-weight:600;font-size:1.125rem;text-align:center}
+    .vs-badge{background:var(--color-bg);color:var(--color-text-muted);font-weight:700;font-size:.75rem;padding:4px 12px;border-radius:999px;text-transform:uppercase;letter-spacing:.05em}
+    .match-meta{display:flex;align-items:center;justify-content:center;gap:24px;color:var(--color-text-muted);font-size:.875rem;flex-wrap:wrap}
+    .match-meta svg{width:16px;height:16px;margin-right:6px;vertical-align:-2px}
+    .score-display{text-align:center;padding:16px;background:var(--color-bg);border-radius:var(--radius-md);margin:16px 0}
+    .score-current{font-size:3rem;font-weight:700;font-variant-numeric:tabular-nums;color:var(--color-text);font-family:'Inter',monospace}
+    .score-status{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:999px;font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-top:8px}
+    .status-live{background:#fef3c7;color:#92400e;animation:pulse 2s infinite}
+    .status-finished{background:#dcfce7;color:#166534}
+    .status-upcoming{background:#dbeafe;color:#1e40af}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.6}}
+    .section-title{font-size:1.25rem;font-weight:700;margin-bottom:16px;display:flex;align-items:center;gap:10px}
+    .section-title svg{width:20px;height:20px;color:var(--color-primary)}
+    .preview-content{white-space:pre-wrap;line-height:1.8;color:var(--color-text)}
+    .prediction-box{background:linear-gradient(135deg,#eff6ff 0%,#dbeafe 100%);border:1px solid #bfdbfe;border-radius:var(--radius-md);padding:20px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center}
+    .prediction-label{font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--color-primary)}
+    .prediction-text{font-size:1.5rem;font-weight:700;color:var(--color-text)}
+    .prediction-confidence{display:flex;align-items:center;gap:8px;font-size:.875rem;color:var(--color-text-muted)}
+    .community-picks{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+    .pick-bar{background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-md);padding:16px;text-align:center;position:relative}
+    .pick-bar::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--color-primary)}
+    .pick-label{font-size:.75rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--color-text-muted);margin-bottom:8px}
+    .pick-percent{font-size:2rem;font-weight:700;color:var(--color-text);font-variant-numeric:tabular-nums}
+    .pick-progress{height:8px;background:var(--color-border);border-radius:999px;margin-top:12px;overflow:hidden}
+    .pick-progress-fill{height:100%;background:var(--color-primary);border-radius:999px;transition:width .5s ease}
+    .prediction-form{display:flex;flex-direction:column;gap:16px;margin-top:24px;padding-top:24px;border-top:1px solid var(--color-border)}
+    .form-group{display:flex;flex-direction:column;gap:8px}
+    .form-label{font-weight:500;font-size:.875rem}
+    .form-select{padding:12px 16px;border:1px solid var(--color-border);border-radius:var(--radius-md);font-size:1rem;background:var(--color-surface);cursor:pointer}
+    .form-select:focus{outline:none;border-color:var(--color-primary)}
+    .score-inputs{display:flex;align-items:center;gap:12px}
+    .score-input{width:80px;padding:12px 16px;border:1px solid var(--color-border);border-radius:var(--radius-md);font-size:1.25rem;font-weight:600;text-align:center;background:var(--color-surface)}
+    .score-input:focus{outline:none;border-color:var(--color-primary)}
+    .score-separator{color:var(--color-text-muted);font-size:1.5rem;font-weight:300}
+    .form-actions{display:flex;gap:12px;margin-top:8px}
+    .auth-required{text-align:center;padding:32px;background:var(--color-bg);border-radius:var(--radius-md);color:var(--color-text-muted)}
+    .auth-required .btn{margin-top:12px}
+    .site-footer{padding:32px 24px;border-top:1px solid var(--color-border);background:var(--color-surface)}
+    .site-footer__inner{max-width:var(--container-max);margin:0 auto;text-align:center;color:var(--color-text-muted);font-size:.875rem}
+    .loading{display:flex;align-items:center;justify-content:center;padding:40px;color:var(--color-text-muted)}
+    .loading svg{width:24px;height:24px;animation:spin 1s linear infinite;margin-right:12px}
+    @keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+    .error-state{text-align:center;padding:40px;color:var(--color-error)}
+    .error-state .btn{margin-top:16px}
+    @media(max-width:768px){
+      .community-picks{grid-template-columns:1fr}
+      .match-hero{gap:8px}
+      .team-flag{width:48px;height:36px}
+      .team-name{font-size:1rem}
+      .score-current{font-size:2rem}
+    }
+  </style>
+</head>
+<body>
+  <script src="https://static.memberstack.com/scripts/v1/memberstack-dom.js" data-memberstack-app="YOUR_API_KEY_HERE" async></script>
+
+  <header class="site-header">
+    <div class="site-header__inner">
+      <a href="index.html" class="site-logo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 0 0 20M12 2a10 10 0 0 1 0 20M2 12a10 10 0 0 0 20 0M2 12a10 10 0 0 1 20 0"/><path d="M8 12l2 2 4-4" stroke-linecap="round" stroke-linejoin="round"/></svg>Soccer Prediction Hub</a>
+      <nav class="site-nav"><a href="index.html" class="nav-link">Leaderboard</a><a href="match.html" class="nav-link is-active">Matches</a><a href="dashboard.html" class="nav-link">Dashboard</a></nav>
+      <div id="auth-area"><button class="btn btn--ghost btn--sm" id="login-btn" style="display:none">Log In</button><button class="btn btn--primary btn--sm" id="signup-btn" style="display:none">Sign Up</button><div class="user-menu" id="user-menu" style="display:none"><div class="user-menu__trigger"><div class="user-menu__avatar" id="user-avatar"></div><span class="user-menu__name" id="user-name"></span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></div><div class="user-menu__dropdown"><a href="dashboard.html" class="user-menu__item">Dashboard</a><a href="#" class="user-menu__item" id="logout-btn">Log Out</a></div></div></div>
+    </div>
+  </header>
+
+  <main class="main">
+    <div class="container" id="match-container">
+      <div class="loading" id="loading-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10" stroke-opacity=".25"/><path d="M12 2a10 10 0 0 1 10 10" stroke-linecap="round"/></svg>Loading match…</div>
+      <div class="error-state" id="error-state" style="display:none"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom:16px"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg><h2 id="error-title">Match Not Found</h2><p id="error-msg"></p><a href="index.html" class="btn btn--primary">Back to Leaderboard</a></div>
+    </div>
+  </main>
+
+<footer class="site-footer"><div class="site-footer__inner"><p>Soccer Prediction Hub &copy; 2026 — Built with Memberstack + Xano + Cloudflare Pages</p></div></footer>
+
+<script>
+const XANO_BASE='YOUR_API_KEY_HERE';
+const XANO_KEY='YOUR_API_KEY_HERE';
+const MS_PUBLIC_KEY='YOUR_API_KEY_HERE';
+const AIRTABLE_BASE='YOUR_API_KEY_HERE';
+const AIRTABLE_TOKEN='YOUR_API_KEY_HERE';
+
+let memberstack=null,currentUser=null,matchId=null,matchData=null;
+
+async function xanoFetch(path,opts={}){
+  const url=XANO_BASE+path,headers={'Authorization':'Bearer '+XANO_KEY,'Content-Type':'application/json',...opts.headers};
+  const resp=await fetch(url,{...opts,headers});
+  if(!resp.ok)throw new Error((await resp.json().catch(()=>({}))).message||`HTTP ${resp.status}`);
+  return resp.json();
+}
+async function airtableFetch(path){
+  const url='https://api.airtable.com/v0/'+AIRTABLE_BASE+path,headers={'Authorization':'Bearer '+AIRTABLE_TOKEN};
+  const resp=await fetch(url,{headers});
+  if(!resp.ok)throw new Error('Airtable error');
+  return resp.json();
+}
+
+function getMatchIdFromUrl(){
+  const params=new URLSearchParams(window.location.search);
+  return params.get('id')||params.get('match_id')||(window.location.pathname.split('/').pop()||'').replace('.html','');
+}
+
+async function initMemberstack(){
+  await new Promise(r=>{if(window.$memberstackDom)return r();const c=setInterval(()=>{if(window.$memberstackDom){clearInterval(c);r();}},100);});
+  memberstack=window.$memberstackDom;await memberstack.init(MS_PUBLIC_KEY).catch(console.error);
+  const m=await memberstack.getCurrentMember();
+  if(m){currentUser={id:m.id,email:m.auth?.email,username:m.customFields?.username,country_code:m.customFields?.country_code,is_premium:m.planConnections?.some(p=>p.active&&p.type==='PAID')};updateAuthUI();}
+}
+
+function updateAuthUI(){
+  document.getElementById('login-btn').style.display='none';
+  document.getElementById('signup-btn').style.display='none';
+  document.getElementById('user-menu').style.display='block';
+  document.getElementById('user-avatar').textContent=(currentUser.username||currentUser.email||'U')[0].toUpperCase();
+  document.getElementById('user-name').textContent=currentUser.username||currentUser.email;
+}
+
+async function loadMatch(){
+  matchId=getMatchIdFromUrl();
+  if(!matchId){showError('No Match ID','No match specified. <a href="index.html">Back to leaderboard</a>');return;}
+  try{
+    const data=await airtableFetch('/MATCHES?filterByFormula={Match ID} = "'+matchId+'"&maxRecords=1');
+    if(!data.records||!data.records.length){showError('Match Not Found','No match found with ID: '+matchId);return;}
+    matchData=data.records[0].fields;
+    renderMatch();
+    await populatePredictionForm();
+  }catch(e){console.error(e);showError('Load Failed',e.message);}
+}
+
+function renderMatch(){
+  document.getElementById('loading-state').style.display='none';
+  document.getElementById('match-container').innerHTML=`
+    <article class="card">
+      <div class="card-header"><h1 class="section-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 0 0 20M12 2a10 10 0 0 1 0 20M2 12a10 10 0 0 0 20 0M2 12a10 10 0 0 1 20 0"/><path d="M8 12l2 2 4-4" stroke-linecap="round" stroke-linejoin="round"/></svg>${matchData['Home Team']} vs ${matchData['Away Team']}</h1></div>
+      <div class="card-body">
+        <div class="match-hero">
+          <div class="team"><img class="team-flag" src="${matchData['Home Team Flag']||'https://via.placeholder.com/64x48?text=' + encodeURIComponent(matchData['Home Team'])}" alt="${matchData['Home Team']} flag"><span class="team-name">${matchData['Home Team']}</span></div>
+          <span class="vs-badge">vs</span>
+          <div class="team"><img class="team-flag" src="${matchData['Away Team Flag']||'https://via.placeholder.com/64x48?text=' + encodeURIComponent(matchData['Away Team'])}" alt="${matchData['Away Team']} flag"><span class="team-name">${matchData['Away Team']}</span></div>
+        </div>
+        <div class="match-meta">
+          <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>${new Date(matchData['Match Date']).toLocaleString()}</span>
+          <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>${matchData['League']} ${matchData['Season']}</span>
+        </div>
+        <div class="score-display">
+          <div class="score-current">${matchData['Home Score']||0} - ${matchData['Away Score']||0}</div>
+          <span class="score-status status-${(matchData['Status']||'upcoming').toLowerCase().replace(' ','-')}">${renderStatusIcon(matchData['Status']||'Not Started')} ${matchData['Status']||'Not Started'}</span>
+        </div>
+      </div>
+    </article>
+
+    ${matchData['AI Preview']?`<article class="card"><div class="card-header"><h2 class="section-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>AI Match Preview</h2></div><div class="card-body"><div class="preview-content">${matchData['AI Preview']}</div></div></article>`:''}
+
+    ${matchData['AI Prediction']?`<article class="card"><div class="card-header"><h2 class="section-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>AI Prediction</h2></div><div class="card-body"><div class="prediction-box"><span class="prediction-label">AI Predicts</span><span class="prediction-text">${matchData['AI Prediction']}</span><span class="prediction-confidence"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>Confidence: ${matchData['AI Confidence']||'—'}%</span></div></div></article>`:''}
+
+    ${renderCommunityPicks()}
+
+    <article class="card"><div class="card-header"><h2 class="section-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>Make Your Prediction</h2></div><div class="card-body"><div id="prediction-form-area" class="prediction-form"></div></div></article>
+  `;
+  document.getElementById('logout-btn')?.addEventListener('click',handleLogout);
+}
+
+function renderStatusIcon(status){
+  const s=(status||'').toLowerCase();
+  if(s==='live')return '<svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10" opacity=".2"/><circle cx="12" cy="12" r="4" animation="pulse 1.5s infinite"/></svg>';
+  if(s==='finished')return '<svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M20 6L9 17l-5-5"/></svg>';
+  return '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/></svg>';
+}
+
+function renderCommunityPicks(){
+  const h=matchData['Community Home %']||0,d=matchData['Community Draw %']||0,a=matchData['Community Away %']||0,total=h+d+a||1;
+  return `<article class="card"><div class="card-header"><h2 class="section-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>Community Picks</h2></div><div class="card-body"><div class="community-picks"><div class="pick-bar"><div class="pick-label">Home Win</div><div class="pick-percent">${h.toFixed(1)}%</div><div class="pick-progress"><div class="pick-progress-fill" style="width:${(h/total*100).toFixed(1)}%"></div></div></div><div class="pick-bar"><div class="pick-label">Draw</div><div class="pick-percent">${d.toFixed(1)}%</div><div class="pick-progress"><div class="pick-progress-fill" style="width:${(d/total*100).toFixed(1)}%"></div></div></div><div class="pick-bar"><div class="pick-label">Away Win</div><div class="pick-percent">${a.toFixed(1)}%</div><div class="pick-progress"><div class="pick-progress-fill" style="width:${(a/total*100).toFixed(1)}%"></div></div></div></div></div></article>`;
+}
+
+async function populatePredictionForm(){
+  const area=document.getElementById('prediction-form-area');
+  if(!currentUser){
+    area.innerHTML=`<div class="auth-required"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom:16px;color:var(--color-text-muted)"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg><h3>Sign in to Predict</h3><p>Log in or create an account to submit your prediction for this match.</p><button class="btn btn--primary" id="login-to-predict">Sign In / Sign Up</button></div>`;
+    document.getElementById('login-to-predict')?.addEventListener('click',()=>{setFormMode('login');showAuthModal();});
+    return;
+  }
+  const isLocked=new Date(matchData['Match Date'])<=new Date()||matchData['Status']==='Finished';
+  if(isLocked){
+    area.innerHTML=`<div class="auth-required"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom:16px"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg><h3>Predictions Locked</h3><p>This match has started or finished. Predictions are no longer accepted.</p></div>`;
+    return;
+  }
+  area.innerHTML=`
+    <form id="prediction-form" novalidate>
+      <div class="form-group"><label class="form-label" for="predicted_winner">Match Winner</label><select id="predicted_winner" name="predicted_winner" class="form-select" required><option value="">Select winner</option><option value="home">${matchData['Home Team']} (Home)</option><option value="draw">Draw</option><option value="away">${matchData['Away Team']} (Away)</option></select></div>
+      <div class="form-group"><label class="form-label">Predicted Score</label><div class="score-inputs"><input type="number" id="predicted_home_score" name="predicted_home_score" class="score-input" min="0" max="20" required placeholder="0"><span class="score-separator">-</span><input type="number" id="predicted_away_score" name="predicted_away_score" class="score-input" min="0" max="20" required placeholder="0"></div></div>
+      <div class="form-actions"><button type="submit" class="btn btn--primary">Submit Prediction</button><button type="button" class="btn btn--ghost" id="clear-form">Clear</button></div>
+    </form>`;
+  document.getElementById('prediction-form')?.addEventListener('submit',handlePredictSubmit);
+  document.getElementById('clear-form')?.addEventListener('click',()=>document.getElementById('prediction-form').reset());
+}
+
+async function handlePredictSubmit(e){
+  e.preventDefault();
+  const btn=e.target.querySelector('button[type=submit]');
+  btn.disabled=true;btn.textContent='Submitting…';
+  try{
+    await xanoFetch('/predictions',{method:'POST',body:JSON.stringify({user_id:currentUser.id,match_id:matchId,predicted_winner:e.target.predicted_winner.value,predicted_home_score:parseInt(e.target.predicted_home_score.value),predicted_away_score:parseInt(e.target.predicted_away_score.value)})});
+    alert('Prediction submitted! Good luck!');
+    e.target.reset();
+  }catch(err){
+    alert('Failed: '+err.message);
+  }finally{btn.disabled=false;btn.textContent='Submit Prediction';}
+}
+
+let authMode='login';
+function showAuthModal(){document.getElementById('auth-modal').hidden=false;requestAnimationFrame(()=>document.getElementById('auth-modal').classList.add('is-open'));}
+function hideAuthModal(){document.getElementById('auth-modal').classList.remove('is-open');setTimeout(()=>document.getElementById('auth-modal').hidden=true,150);}
+function setFormMode(mode){authMode=mode;const t=document.getElementById('modal-title'),s=document.querySelector('.modal-subtitle'),sb=document.getElementById('auth-form').querySelector('button[type=submit]'),sw=document.getElementById('switch-to-signup');
+  if(mode==='login'){t.textContent='Welcome Back';s.textContent='Sign in to track your predictions and climb the leaderboard';sb.textContent='Sign In';sw.textContent='Sign Up Instead';}
+  else{t.textContent='Create Account';s.textContent='Join the competition — predict matches and win';sb.textContent='Create Account';sw.textContent='Sign In Instead';}
+  document.getElementById('auth-form').reset();document.querySelectorAll('.form-error').forEach(e=>e.textContent='');}
+
+async function handleAuthSubmit(e){
+  e.preventDefault();
+  const fd=new FormData(e.target),email=fd.get('email').trim(),pwd=fd.get('password'),mode=fd.get('mode');
+  if(!email||!pwd)return;
+  try{
+    if(mode==='login'){await memberstack.loginMemberEmailPassword(email,pwd);}
+    else{const u=prompt('Username:'),c=prompt('Country code (BR,FR,US...):').toUpperCase();if(!u||!c)return;await memberstack.signupMemberEmailPassword(email,pwd,{username:u,country_code:c});}
+    const m=await memberstack.getCurrentMember();
+    currentUser={id:m.id,email:m.auth?.email,username:m.customFields?.username,country_code:m.customFields?.country_code,is_premium:m.planConnections?.some(p=>p.active&&p.type==='PAID')};
+    updateAuthUI();hideAuthModal();populatePredictionForm();
+  }catch(err){console.error(err);alert('Auth failed: '+err.message);}
+}
+
+async function handleLogout(){await memberstack.logout();currentUser=null;document.getElementById('login-btn').style.display='inline-flex';document.getElementById('signup-btn').style.display='inline-flex';document.getElementById('user-menu').style.display='none';populatePredictionForm();}
+
+function showError(title,msg){document.getElementById('loading-state').style.display='none';document.getElementById('error-state').style.display='block';document.getElementById('error-title').textContent=title;document.getElementById('error-msg').innerHTML=msg;}
+
+function showAuthModal(){document.getElementById('auth-modal').hidden=false;requestAnimationFrame(()=>document.getElementById('auth-modal').classList.add('is-open'));}
+function hideAuthModal(){document.getElementById('auth-modal').classList.remove('is-open');setTimeout(()=>document.getElementById('auth-modal').hidden=true,150);}
+
+document.addEventListener('DOMContentLoaded',async()=>{
+  await initMemberstack();
+  await loadMatch();
+  document.getElementById('login-btn').addEventListener('click',()=>{setFormMode('login');showAuthModal();});
+  document.getElementById('signup-btn').addEventListener('click',()=>{setFormMode('signup');showAuthModal();});
+  document.getElementById('logout-btn').addEventListener('click',handleLogout);
+  document.getElementById('auth-modal').addEventListener('click',e=>{if(e.target===document.getElementById('auth-modal'))hideAuthModal();});
+  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!document.getElementById('auth-modal').hidden)hideAuthModal();});
+  document.getElementById('switch-to-signup').addEventListener('click',e=>{e.preventDefault();setFormMode(authMode==='login'?'signup':'login');});
+  document.getElementById('auth-form').addEventListener('submit',handleAuthSubmit);
+  document.getElementById('forgot-link')?.addEventListener('click',e=>{e.preventDefault();alert('Password reset not implemented yet');});
+});
+</script>
+
+<!-- Auth Modal -->
+<div class="modal-overlay" id="auth-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title" hidden>
+  <div class="modal"><h2 id="modal-title" class="modal-title">Welcome Back</h2><p class="modal-subtitle">Sign in to track your predictions and climb the leaderboard</p><form class="modal-form" id="auth-form" novalidate><input type="hidden" name="mode" value="login"><div class="form-group"><label for="auth-email" class="form-label">Email</label><input type="email" id="auth-email" name="email" class="form-input" required autocomplete="email" placeholder="you@example.com"><span class="form-error" id="email-error"></span></div><div class="form-group"><label for="auth-password" class="form-label">Password</label><input type="password" id="auth-password" name="password" class="form-input" required autocomplete="current-password" placeholder="••••••••"><span class="form-error" id="password-error"></span></div><div class="modal-actions"><button type="button" class="btn btn--ghost" id="switch-to-signup">Sign Up Instead</button><button type="submit" class="btn btn--primary">Sign In</button></div></form><p class="modal-switch"><a href="#" id="forgot-link">Forgot password?</a></p></div>
+</div>
+<style>.modal-overlay{position:fixed;inset:0;background:rgba(15,23,42,.6);z-index:1000;display:flex;align-items:center;justify-content:center;padding:24px;opacity:0;visibility:hidden;transition:all 150ms ease}.modal-overlay.is-open{opacity:1;visibility:visible}.modal{background:#fff;border-radius:16px;box-shadow:0 25px 50px -12px rgba(0,0,0,.25);max-width:420px;width:100%;padding:32px;transform:translateY(20px);transition:transform 150ms ease}.modal-overlay.is-open .modal{transform:translateY(0)}.modal-title{font-size:1.5rem;font-weight:700;margin-bottom:8px;text-align:center}.modal-subtitle{text-align:center;color:#64748b;margin-bottom:24px}.modal-form{display:flex;flex-direction:column;gap:16px}.form-group{display:flex;flex-direction:column;gap:6px}.form-label{font-size:.875rem;font-weight:500;color:#1e293b}.form-input{padding:12px 16px;border:1px solid #e2e8f0;border-radius:10px;font-size:1rem;transition:border-color 150ms ease}.form-input:focus{outline:none;border-color:#2563eb}.form-error{color:#dc2626;font-size:.8125rem;min-height:18px}.modal-actions{display:flex;gap:12px;margin-top:8px}.modal-actions .btn{flex:1}.modal-switch{text-align:center;margin-top:16px;font-size:.9375rem;color:#64748b}.modal-switch a{font-weight:600}</style>
+</body>
+</html>

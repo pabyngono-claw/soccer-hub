@@ -1,0 +1,541 @@
+<!-- 
+CONFIGURATION: Replace all YOUR_* placeholders with actual values before deploying.
+Never commit real API keys to source control!
+Use Cloudflare Pages environment variables or a build-time substitution step.
+See README.md for setup instructions.
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Soccer Prediction Hub — Global Leaderboard</title>
+  <meta name="description" content="Global leaderboard for soccer predictions. Compete worldwide or by country.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --color-bg: #f8fafc;
+      --color-surface: #ffffff;
+      --color-border: #e2e8f0;
+      --color-text: #1e293b;
+      --color-text-muted: #64748b;
+      --color-primary: #2563eb;
+      --color-primary-hover: #1d4ed8;
+      --color-gold: #d97706;
+      --color-silver: #6b7280;
+      --color-bronze: #b45309;
+      --color-success: #16a34a;
+      --color-error: #dc2626;
+      --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+      --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.1);
+      --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.1);
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 16px;
+      --transition: 150ms ease;
+      --container-max: 1200px;
+      --header-h: 64px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; }
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background: var(--color-bg);
+      color: var(--color-text);
+      line-height: 1.6;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    a { color: var(--color-primary); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    img { max-width: 100%; height: auto; display: block; }
+    button { font-family: inherit; cursor: pointer; border: none; background: none; }
+
+    /* Header */
+    .site-header {
+      position: sticky; top: 0; z-index: 100;
+      background: var(--color-surface);
+      border-bottom: 1px solid var(--color-border);
+      height: var(--header-h);
+    }
+    .site-header__inner {
+      max-width: var(--container-max);
+      margin: 0 auto;
+      padding: 0 24px;
+      height: 100%;
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 16px;
+    }
+    .site-logo {
+      display: flex; align-items: center; gap: 10px;
+      font-weight: 700; font-size: 1.25rem; color: var(--color-text);
+      text-decoration: none;
+    }
+    .site-logo svg { width: 32px; height: 32px; color: var(--color-primary); }
+    .site-nav { display: flex; align-items: center; gap: 24px; }
+    .nav-link { font-weight: 500; color: var(--color-text-muted); font-size: 0.9375rem; }
+    .nav-link:hover, .nav-link.is-active { color: var(--color-text); text-decoration: none; }
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      padding: 10px 20px; border-radius: var(--radius-md); font-weight: 600; font-size: 0.9375rem;
+      transition: all var(--transition); white-space: nowrap; }
+    .btn--primary { background: var(--color-primary); color: #fff; }
+    .btn--primary:hover { background: var(--color-primary-hover); }
+    .btn--ghost { background: transparent; color: var(--color-text); border: 1px solid var(--color-border); }
+    .btn--ghost:hover { background: var(--color-bg); border-color: var(--color-text); }
+    .btn--sm { padding: 8px 16px; font-size: 0.875rem; }
+    .user-menu { position: relative; }
+    .user-menu__trigger { display: flex; align-items: center; gap: 8px; padding: 6px 10px;
+      border-radius: var(--radius-md); background: var(--color-bg); border: 1px solid var(--color-border); }
+    .user-menu__avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--color-primary); color: #fff;
+      display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 0.875rem; }
+    .user-menu__name { font-weight: 500; font-size: 0.875rem; max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .user-menu__dropdown { position: absolute; top: calc(100% + 8px); right: 0; min-width: 200px;
+      background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-md);
+      box-shadow: var(--shadow-lg); padding: 8px 0; opacity: 0; visibility: hidden; transform: translateY(-8px);
+      transition: all var(--transition); z-index: 50; }
+    .user-menu:hover .user-menu__dropdown { opacity: 1; visibility: visible; transform: translateY(0); }
+    .user-menu__item { display: block; width: 100%; padding: 10px 16px; text-align: left; font-size: 0.9375rem;
+      color: var(--color-text); transition: background var(--transition); }
+    .user-menu__item:hover { background: var(--color-bg); text-decoration: none; }
+    .user-menu__divider { height: 1px; background: var(--color-border); margin: 8px 0; }
+
+    /* Main */
+    .main { flex: 1; padding: 40px 24px; }
+    .container { max-width: var(--container-max); margin: 0 auto; }
+
+    /* Leaderboard Section */
+    .leaderboard-header { text-align: center; margin-bottom: 32px; }
+    .leaderboard-title { font-size: 2.5rem; font-weight: 700; color: var(--color-text); margin-bottom: 8px; }
+    .leaderboard-subtitle { color: var(--color-text-muted); font-size: 1.125rem; }
+
+    .leaderboard-controls { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; margin-bottom: 24px; }
+    .select-wrapper { position: relative; }
+    .select-wrapper select { appearance: none; padding: 12px 40px 12px 16px; border: 1px solid var(--color-border);
+      border-radius: var(--radius-md); background: var(--color-surface); font-size: 0.9375rem; font-weight: 500;
+      color: var(--color-text); cursor: pointer; min-width: 220px; transition: border-color var(--transition); }
+    .select-wrapper select:hover, .select-wrapper select:focus { border-color: var(--color-primary); outline: none; }
+    .select-wrapper::after { content: ''; position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
+      width: 0; height: 0; border-left: 5px solid transparent; border-right: 5px solid transparent; border-top: 6px solid var(--color-text-muted); pointer-events: none; }
+
+    .leaderboard-table-wrapper { background: var(--color-surface); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); overflow: hidden; border: 1px solid var(--color-border); }
+    .leaderboard-table { width: 100%; border-collapse: collapse; font-size: 0.9375rem; }
+    .leaderboard-table th, .leaderboard-table td { padding: 16px 20px; text-align: left; border-bottom: 1px solid var(--color-border); }
+    .leaderboard-table th { background: var(--color-bg); font-weight: 600; color: var(--color-text-muted); font-size: 0.8125rem; text-transform: uppercase; letter-spacing: 0.05em; }
+    .leaderboard-table tbody tr { transition: background var(--transition); }
+    .leaderboard-table tbody tr:last-child td { border-bottom: none; }
+    .leaderboard-table tbody tr:hover { background: #fbfdff; }
+    .leaderboard-table tbody tr.rank-1 { background: #fffbeb; }
+    .leaderboard-table tbody tr.rank-2 { background: #f5f5f5; }
+    .leaderboard-table tbody tr.rank-3 { background: #fef3e2; }
+    .leaderboard-table tbody tr.current-user { background: #eff6ff; box-shadow: inset 3px 0 0 var(--color-primary); }
+    .rank-cell { font-weight: 700; width: 60px; }
+    .rank-cell.rank-1 { color: var(--color-gold); }
+    .rank-cell.rank-2 { color: var(--color-silver); }
+    .rank-cell.rank-3 { color: var(--color-bronze); }
+    .user-cell { display: flex; align-items: center; gap: 12px; }
+    .user-avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--color-primary); color: #fff;
+      display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 0.875rem; }
+    .user-name { font-weight: 600; }
+    .user-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 0.75rem; font-weight: 600; padding: 2px 8px; border-radius: 999px; }
+    .user-badge--premium { background: #fef3c7; color: #92400e; }
+    .country-cell { display: flex; align-items: center; gap: 8px; }
+    .country-flag { width: 24px; height: 18px; border-radius: 2px; object-fit: cover; }
+    .points-cell, .predictions-cell, .streak-cell { text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; }
+    .points-cell { color: var(--color-primary); font-size: 1.125rem; }
+    .streak-cell { color: var(--color-gold); }
+    .streak-icon { display: inline-block; margin-left: 4px; }
+
+    .leaderboard-empty { text-align: center; padding: 60px 20px; color: var(--color-text-muted); }
+    .leaderboard-empty svg { width: 64px; height: 64px; margin-bottom: 16px; opacity: 0.5; }
+    .leaderboard-updated { text-align: center; margin-top: 16px; font-size: 0.8125rem; color: var(--color-text-muted); }
+
+    /* Footer */
+    .site-footer { padding: 32px 24px; border-top: 1px solid var(--color-border); background: var(--color-surface); }
+    .site-footer__inner { max-width: var(--container-max); margin: 0 auto; text-align: center; color: var(--color-text-muted); font-size: 0.875rem; }
+
+    /* Auth modal */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(15,23,42,0.6); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 24px; opacity: 0; visibility: hidden; transition: all var(--transition); }
+    .modal-overlay.is-open { opacity: 1; visibility: visible; }
+    .modal { background: var(--color-surface); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); max-width: 420px; width: 100%; padding: 32px; transform: translateY(20px); transition: transform var(--transition); }
+    .modal-overlay.is-open .modal { transform: translateY(0); }
+    .modal-title { font-size: 1.5rem; font-weight: 700; margin-bottom: 8px; text-align: center; }
+    .modal-subtitle { text-align: center; color: var(--color-text-muted); margin-bottom: 24px; }
+    .modal-form { display: flex; flex-direction: column; gap: 16px; }
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+    .form-label { font-size: 0.875rem; font-weight: 500; color: var(--color-text); }
+    .form-input { padding: 12px 16px; border: 1px solid var(--color-border); border-radius: var(--radius-md); font-size: 1rem; transition: border-color var(--transition); }
+    .form-input:focus { outline: none; border-color: var(--color-primary); }
+    .form-error { color: var(--color-error); font-size: 0.8125rem; min-height: 18px; }
+    .modal-actions { display: flex; gap: 12px; margin-top: 8px; }
+    .modal-actions .btn { flex: 1; }
+    .modal-switch { text-align: center; margin-top: 16px; font-size: 0.9375rem; color: var(--color-text-muted); }
+    .modal-switch a { font-weight: 600; }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .leaderboard-title { font-size: 1.75rem; }
+      .leaderboard-table th:nth-child(5), .leaderboard-table td:nth-child(5),
+      .leaderboard-table th:nth-child(6), .leaderboard-table td:nth-child(6) { display: none; }
+      .site-nav .nav-link { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Memberstack DOM script -->
+  <script src="https://static.memberstack.com/scripts/v1/memberstack-dom.js" data-memberstack-app="YOUR_API_KEY_HERE" async></script>
+
+  <header class="site-header" role="banner">
+    <div class="site-header__inner">
+      <a href="index.html" class="site-logo" aria-label="Soccer Prediction Hub Home">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <circle cx="12" cy="12" r="10"/>
+          <path d="M12 2a10 10 0 0 0 0 20M12 2a10 10 0 0 1 0 20M2 12a10 10 0 0 0 20 0M2 12a10 10 0 0 1 20 0"/>
+          <path d="M8 12l2 2 4-4" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        Soccer Prediction Hub
+      </a>
+      <nav class="site-nav" role="navigation" aria-label="Main navigation">
+        <a href="index.html" class="nav-link is-active" aria-current="page">Leaderboard</a>
+        <a href="match.html" class="nav-link">Matches</a>
+        <a href="dashboard.html" class="nav-link">Dashboard</a>
+      </nav>
+      <div id="auth-area">
+        <!-- Memberstack will inject login/signup buttons here, or we handle manually -->
+        <button class="btn btn--ghost btn--sm" id="login-btn" style="display:none;">Log In</button>
+        <button class="btn btn--primary btn--sm" id="signup-btn" style="display:none;">Sign Up</button>
+        <div class="user-menu" id="user-menu" style="display:none;">
+          <div class="user-menu__trigger" aria-haspopup="true" aria-expanded="false">
+            <div class="user-menu__avatar" id="user-avatar"></div>
+            <span class="user-menu__name" id="user-name"></span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+          </div>
+          <div class="user-menu__dropdown" role="menu">
+            <a href="dashboard.html" class="user-menu__item" role="menuitem">Dashboard</a>
+            <a href="#" class="user-menu__item" role="menuitem" id="logout-btn">Log Out</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="main" role="main">
+    <div class="container">
+      <section class="leaderboard-header" aria-labelledby="leaderboard-title">
+        <h1 id="leaderboard-title" class="leaderboard-title">Global Leaderboard</h1>
+        <p class="leaderboard-subtitle">Top predictors worldwide — filter by country</p>
+      </section>
+
+      <div class="leaderboard-controls" role="search" aria-label="Leaderboard filters">
+        <div class="select-wrapper">
+          <label for="country-filter" class="visually-hidden">Filter by country</label>
+          <select id="country-filter" aria-label="Filter by country">
+            <option value="">All Countries (Global)</option>
+            <!-- Populated by JS -->
+          </select>
+        </div>
+        <button class="btn btn--ghost" id="refresh-btn" aria-label="Refresh leaderboard">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+        </button>
+      </div>
+
+      <div class="leaderboard-table-wrapper" role="region" aria-label="Leaderboard rankings" tabindex="0">
+        <table class="leaderboard-table" id="leaderboard-table">
+          <thead>
+            <tr>
+              <th scope="col">Rank</th>
+              <th scope="col">Username</th>
+              <th scope="col">Country</th>
+              <th scope="col">Points</th>
+              <th scope="col">Predictions</th>
+              <th scope="col">Streak</th>
+            </tr>
+          </thead>
+          <tbody id="leaderboard-body">
+            <!-- Populated by JS -->
+          </tbody>
+        </table>
+        <div class="leaderboard-empty" id="leaderboard-empty" style="display:none;" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+          </svg>
+          <p>No rankings yet — be the first to predict!</p>
+        </div>
+      </div>
+      <p class="leaderboard-updated" id="leaderboard-updated" aria-live="polite"></p>
+    </div>
+  </main>
+
+  <footer class="site-footer" role="contentinfo">
+    <div class="site-footer__inner">
+      <p>Soccer Prediction Hub &copy; 2026 — Built with <a href="https://memberstack.com">Memberstack</a> + <a href="https://xano.com">Xano</a> + <a href="https://cloudflare.com/pages">Cloudflare Pages</a></p>
+    </div>
+  </footer>
+
+  <!-- Auth Modal -->
+  <div class="modal-overlay" id="auth-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title" hidden>
+    <div class="modal">
+      <h2 id="modal-title" class="modal-title">Welcome Back</h2>
+      <p class="modal-subtitle">Sign in to track your predictions and climb the leaderboard</p>
+      <form class="modal-form" id="auth-form" novalidate>
+        <input type="hidden" name="mode" value="login">
+        <div class="form-group">
+          <label for="auth-email" class="form-label">Email</label>
+          <input type="email" id="auth-email" name="email" class="form-input" required autocomplete="email" placeholder="you@example.com">
+          <span class="form-error" id="email-error"></span>
+        </div>
+        <div class="form-group">
+          <label for="auth-password" class="form-label">Password</label>
+          <input type="password" id="auth-password" name="password" class="form-input" required autocomplete="current-password" placeholder="••••••••">
+          <span class="form-error" id="password-error"></span>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn--ghost" id="switch-to-signup">Sign Up Instead</button>
+          <button type="submit" class="btn btn--primary">Sign In</button>
+        </div>
+      </form>
+      <p class="modal-switch"><a href="#" id="forgot-link">Forgot password?</a></p>
+    </div>
+  </div>
+
+  <script>
+    // ============ CONFIG ============
+    const XANO_BASE = 'YOUR_API_KEY_HERE'; // e.g., https://your-workspace.xano.io/api:your-group
+    const XANO_KEY = 'YOUR_API_KEY_HERE';
+    const MS_PUBLIC_KEY = 'YOUR_API_KEY_HERE'; // Get from Memberstack dashboard → Setup → Public Key
+
+    // ============ STATE ============
+    let currentUser = null;
+    let currentCountry = '';
+    let memberstack = null;
+
+    // ============ DOM ELEMENTS ============
+    const loginBtn = document.getElementById('login-btn');
+    const signupBtn = document.getElementById('signup-btn');
+    const userMenu = document.getElementById('user-menu');
+    const userAvatar = document.getElementById('user-avatar');
+    const userName = document.getElementById('user-name');
+    const logoutBtn = document.getElementById('logout-btn');
+    const countryFilter = document.getElementById('country-filter');
+    const refreshBtn = document.getElementById('refresh-btn');
+    const leaderboardBody = document.getElementById('leaderboard-body');
+    const leaderboardEmpty = document.getElementById('leaderboard-empty');
+    const leaderboardUpdated = document.getElementById('leaderboard-updated');
+    const authModal = document.getElementById('auth-modal');
+    const authForm = document.getElementById('auth-form');
+    const switchToSignup = document.getElementById('switch-to-signup');
+    const forgotLink = document.getElementById('forgot-link');
+
+    // ============ UTILITIES ============
+    function showModal() { authModal.hidden = false; requestAnimationFrame(() => authModal.classList.add('is-open')); }
+    function hideModal() { authModal.classList.remove('is-open'); setTimeout(() => authModal.hidden = true, 150); }
+    function setFormMode(mode) {
+      authForm.querySelector('[name="mode"]').value = mode;
+      const title = document.getElementById('modal-title');
+      const submitBtn = authForm.querySelector('button[type="submit"]');
+      const switchBtn = document.getElementById('switch-to-signup');
+      if (mode === 'login') {
+        title.textContent = 'Welcome Back';
+        document.querySelector('.modal-subtitle').textContent = 'Sign in to track your predictions and climb the leaderboard';
+        submitBtn.textContent = 'Sign In';
+        switchBtn.textContent = 'Sign Up Instead';
+      } else {
+        title.textContent = 'Create Account';
+        document.querySelector('.modal-subtitle').textContent = 'Join the competition — predict matches and win';
+        submitBtn.textContent = 'Create Account';
+        switchBtn.textContent = 'Sign In Instead';
+      }
+      authForm.reset();
+      clearErrors();
+    }
+    function clearErrors() { document.querySelectorAll('.form-error').forEach(e => e.textContent = ''); }
+    function setError(field, msg) { document.getElementById(field + '-error').textContent = msg; }
+    function showToast(msg, type = 'info') { console.log(`[${type}] ${msg}`); }
+
+    // ============ XANO API ============
+    async function xanoFetch(path, options = {}) {
+      const url = XANO_BASE + path;
+      const headers = { 'Authorization': 'Bearer ' + XANO_KEY, 'Content-Type': 'application/json', ...options.headers };
+      const resp = await fetch(url, { ...options, headers });
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => ({ message: 'Request failed' }));
+        throw new Error(err.message || `HTTP ${resp.status}`);
+      }
+      return resp.json();
+    }
+
+    async function loadLeaderboard() {
+      try {
+        refreshBtn.disabled = true;
+        refreshBtn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation: spin 1s linear infinite;"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>';
+        const path = currentCountry ? `/leaderboard/country/${encodeURIComponent(currentCountry)}?limit=50` : '/leaderboard/global?limit=50';
+        const data = await xanoFetch(path);
+        renderLeaderboard(data.items || []);
+        leaderboardUpdated.textContent = 'Last updated: ' + new Date().toLocaleString();
+      } catch (err) {
+        console.error('Leaderboard load failed:', err);
+        leaderboardBody.innerHTML = '<tr><td colspan="6" style="padding: 24px; text-align: center; color: var(--color-error);">Failed to load leaderboard. <button class="btn btn--ghost btn--sm" onclick="loadLeaderboard()">Retry</button></td></tr>';
+      } finally {
+        refreshBtn.disabled = false;
+        refreshBtn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>';
+      }
+    }
+
+    function renderLeaderboard(users) {
+      if (!users.length) {
+        leaderboardBody.innerHTML = '';
+        leaderboardEmpty.style.display = 'block';
+        return;
+      }
+      // Sort users by points_total descending (highest first)
+      const sortedUsers = [...users].sort((a, b) => (b.points_total || 0) - (a.points_total || 0));
+      leaderboardEmpty.style.display = 'none';
+      leaderboardBody.innerHTML = sortedUsers.map((user, i) => {
+        const rank = i + 1;
+        const isCurrent = currentUser && user.id === currentUser.id;
+        const countryCode = user.country_code?.toLowerCase();
+        const flag = countryCode ? `<img class="country-flag" src="https://flagcdn.com/24x18/${countryCode}.png" alt="${user.country_code}">` : '';
+        const badge = user.is_premium ? '<span class="user-badge user-badge--premium">Premium</span>' : '';
+        return `<tr class="${rank <= 3 ? 'rank-' + rank : ''} ${isCurrent ? 'current-user' : ''}">
+          <td class="rank-cell rank-${rank <= 3 ? rank : ''}">${rank}</td>
+          <td class="user-cell"><div class="user-avatar">${(user.username || 'U')[0].toUpperCase()}</div><div><div class="user-name">${user.username || 'Anonymous'}</div>${badge}</div></td>
+          <td class="country-cell">${flag}${user.country_code || '—'}</td>
+          <td class="points-cell">${user.points_total || 0}</td>
+          <td class="predictions-cell">${user.predictions_made || 0}</td>
+          <td class="streak-cell">${user.streak || 0} <span class="streak-icon" aria-hidden="true">🔥</span></td>
+        </tr>`;
+      }).join('');
+    }
+
+    async function loadCountries() {
+      try {
+        const data = await xanoFetch('/leaderboard/global?limit=200');
+        const codes = [...new Set((data.items || []).map(u => u.country_code).filter(Boolean))].sort();
+        countryFilter.innerHTML = '<option value="">All Countries (Global)</option>' + codes.map(c => `<option value="${c}">${c}</option>`).join('');
+      } catch (err) { console.error('Countries load failed:', err); }
+    }
+
+    // ============ MEMBERSTACK AUTH ============
+    async function initMemberstack() {
+      // Wait for Memberstack DOM to load
+      await new Promise(r => {
+        if (window.$memberstackDom) return r();
+        const check = setInterval(() => { if (window.$memberstackDom) { clearInterval(check); r(); } }, 100);
+      });
+      memberstack = window.$memberstackDom;
+      memberstack.init(MS_PUBLIC_KEY).catch(console.error);
+      checkAuth();
+    }
+
+    async function checkAuth() {
+      try {
+        const member = await memberstack.getCurrentMember();
+        if (member) {
+          currentUser = { id: member.id, email: member.auth?.email, username: member.customFields?.username, country_code: member.customFields?.country_code, is_premium: member.planConnections?.some(p => p.active && p.type === 'PAID') };
+          updateUIForAuth();
+          loadLeaderboard(); // reload with user context if needed
+        } else {
+          updateUIForGuest();
+        }
+      } catch (err) { console.error('Auth check failed:', err); updateUIForGuest(); }
+    }
+
+    function updateUIForAuth() {
+      loginBtn.style.display = 'none';
+      signupBtn.style.display = 'none';
+      userMenu.style.display = 'block';
+      userAvatar.textContent = (currentUser.username || currentUser.email || 'U')[0].toUpperCase();
+      userName.textContent = currentUser.username || currentUser.email;
+    }
+
+    function updateUIForGuest() {
+      loginBtn.style.display = 'inline-flex';
+      signupBtn.style.display = 'inline-flex';
+      userMenu.style.display = 'none';
+    }
+
+    async function handleLogin(email, password) {
+      try {
+        await memberstack.loginMemberEmailPassword(email, password);
+        await checkAuth();
+        hideModal();
+        showToast('Signed in successfully', 'success');
+      } catch (err) {
+        if (err.message?.includes('email')) setError('auth-email', 'Invalid email');
+        else if (err.message?.includes('password')) setError('auth-password', 'Invalid password');
+        else setError('auth-email', err.message || 'Sign in failed');
+      }
+    }
+
+    async function handleSignup(email, password, username, country) {
+      try {
+        const member = await memberstack.signupMemberEmailPassword(email, password, { username, country_code: country });
+        currentUser = { id: member.id, email, username, country_code: country, is_premium: false };
+        updateUIForAuth();
+        hideModal();
+        showToast('Account created! Welcome!', 'success');
+        loadLeaderboard();
+      } catch (err) {
+        if (err.message?.includes('email')) setError('auth-email', 'Email already in use');
+        else setError('auth-email', err.message || 'Sign up failed');
+      }
+    }
+
+    async function handleLogout() {
+      await memberstack.logout();
+      currentUser = null;
+      updateUIForGuest();
+      loadLeaderboard();
+    }
+
+    // ============ EVENT LISTENERS ============
+    loginBtn.addEventListener('click', () => { setFormMode('login'); showModal(); });
+    signupBtn.addEventListener('click', () => { setFormMode('signup'); showModal(); });
+    logoutBtn.addEventListener('click', handleLogout);
+    authModal.addEventListener('click', e => { if (e.target === authModal) hideModal(); });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape' && !authModal.hidden) hideModal(); });
+
+    switchToSignup.addEventListener('click', e => {
+      e.preventDefault();
+      const isLogin = authForm.querySelector('[name="mode"]').value === 'login';
+      setFormMode(isLogin ? 'signup' : 'login');
+    });
+
+    forgotLink.addEventListener('click', e => { e.preventDefault(); showToast('Password reset not implemented yet', 'info'); });
+
+    authForm.addEventListener('submit', async e => {
+      e.preventDefault();
+      clearErrors();
+      const formData = new FormData(authForm);
+      const email = formData.get('email').trim();
+      const password = formData.get('password');
+      const mode = formData.get('mode');
+      if (!email || !password) return;
+      if (mode === 'login') await handleLogin(email, password);
+      else {
+        // For signup we need username + country - prompt via simple inputs
+        const username = prompt('Choose a username:');
+        const country = prompt('Country code (e.g., BR, FR, US):').toUpperCase();
+        if (!username || !country) return;
+        await handleSignup(email, password, username, country);
+      }
+    });
+
+    countryFilter.addEventListener('change', () => { currentCountry = countryFilter.value; loadLeaderboard(); });
+    refreshBtn.addEventListener('click', loadLeaderboard);
+
+    // ============ INIT ============
+    document.addEventListener('DOMContentLoaded', async () => {
+      await initMemberstack();
+      await loadCountries();
+      await loadLeaderboard();
+    });
+  </script>
+  <style>
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    .visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+  </style>
+</body>
+</html>
