@@ -12,19 +12,16 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
         with:
-          node-version: '24'
+          python-version: '3.12'
 
       - name: Install Wrangler
         run: npm install -g wrangler@latest
 
-      - name: Make build script executable
-        run: chmod +x build.sh
-
       - name: Inject environment variables
-        run: ./build.sh
+        run: python3 build.py
         env:
           XANO_BASE_URL: ${{ secrets.XANO_BASE_URL }}
           XANO_API_KEY: ${{ secrets.XANO_API_KEY }}
@@ -40,7 +37,7 @@ jobs:
           
           [assets]
           directory = "."
-          exclude = [".github", ".git", "build.sh", "README.md", "*.md"]
+          exclude = [".github", ".git", "build.py", "build.sh", "README.md", "*.md"]
           EOF
 
       - name: Deploy static assets
