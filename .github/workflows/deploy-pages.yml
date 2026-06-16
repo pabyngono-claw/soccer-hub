@@ -1,0 +1,48 @@
+name: Deploy to Cloudflare Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Wrangler
+        run: npm install -g wrangler
+
+      - name: Make build script executable
+        run: chmod +x build.sh
+
+      - name: Inject environment variables
+        run: ./build.sh
+        env:
+          XANO_BASE_URL: ${{ secrets.XANO_BASE_URL }}
+          XANO_API_KEY: ${{ secrets.XANO_API_KEY }}
+          MEMBERSTACK_PUBLIC_KEY: ${{ secrets.MEMBERSTACK_PUBLIC_KEY }}
+          AIRTABLE_BASE_ID: ${{ secrets.AIRTABLE_BASE_ID }}
+          AIRTABLE_API_KEY: ${{ secrets.AIRTABLE_API_KEY }}
+
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/pages-action@v1
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          projectName: soccer-prediction-hub
+          directory: .
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+          branch: main

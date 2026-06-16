@@ -103,7 +103,7 @@ See README.md for setup instructions.
   </style>
 </head>
 <body>
-  <script src="https://static.memberstack.com/scripts/v1/memberstack-dom.js" data-memberstack-app="YOUR_API_KEY_HERE" async></script>
+  <script src="https://static.memberstack.com/scripts/v1/memberstack-dom.js" data-memberstack-app="YOUR_MEMBERSTACK_PUBLIC_KEY" async></script>
 
   <header class="site-header">
     <div class="site-header__inner">
@@ -123,10 +123,10 @@ See README.md for setup instructions.
 <footer class="site-footer"><div class="site-footer__inner"><p>Soccer Prediction Hub &copy; 2026 — Built with Memberstack + Xano + Cloudflare Pages</p></div></footer>
 
 <script>
-const XANO_BASE='YOUR_API_KEY_HERE';
-const XANO_KEY='YOUR_API_KEY_HERE';
-const MS_PUBLIC_KEY='YOUR_API_KEY_HERE';
-const AIRTABLE_BASE='YOUR_API_KEY_HERE';
+const XANO_BASE = window.ENV?.XANO_BASE_URL || 'https://your-workspace.xano.io/api:your-group';
+const XANO_KEY = window.ENV?.XANO_API_KEY || '';
+const MS_PUBLIC_KEY = window.ENV?.MEMBERSTACK_PUBLIC_KEY || '';
+const AIRTABLE_BASE = window.ENV?.AIRTABLE_BASE_ID || '';
 const AIRTABLE_TOKEN='YOUR_API_KEY_HERE';
 
 let memberstack=null,currentUser=null,matchId=null,matchData=null;

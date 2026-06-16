@@ -185,7 +185,7 @@ See README.md for setup instructions.
 </head>
 <body>
   <!-- Memberstack DOM script -->
-  <script src="https://static.memberstack.com/scripts/v1/memberstack-dom.js" data-memberstack-app="YOUR_API_KEY_HERE" async></script>
+  <script src="https://static.memberstack.com/scripts/v1/memberstack-dom.js" data-memberstack-app="YOUR_MEMBERSTACK_PUBLIC_KEY" async></script>
 
   <header class="site-header" role="banner">
     <div class="site-header__inner">
@@ -302,9 +302,10 @@ See README.md for setup instructions.
 
   <script>
     // ============ CONFIG ============
-    const XANO_BASE = 'YOUR_API_KEY_HERE'; // e.g., https://your-workspace.xano.io/api:your-group
-    const XANO_KEY = 'YOUR_API_KEY_HERE';
-    const MS_PUBLIC_KEY = 'YOUR_API_KEY_HERE'; // Get from Memberstack dashboard → Setup → Public Key
+    // Injected at build time from GitHub Actions / Cloudflare Pages environment variables
+    const XANO_BASE = window.ENV?.XANO_BASE_URL || 'https://your-workspace.xano.io/api:your-group';
+    const XANO_KEY = window.ENV?.XANO_API_KEY || '';
+    const MS_PUBLIC_KEY = window.ENV?.MEMBERSTACK_PUBLIC_KEY || '';
 
     // ============ STATE ============
     let currentUser = null;

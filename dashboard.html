@@ -137,7 +137,7 @@ See README.md for setup instructions.
   </style>
 </head>
 <body>
-  <script src="https://static.memberstack.com/scripts/v1/memberstack-dom.js" data-memberstack-app="YOUR_API_KEY_HERE" async></script>
+  <script src="https://static.memberstack.com/scripts/v1/memberstack-dom.js" data-memberstack-app="YOUR_MEMBERSTACK_PUBLIC_KEY" async></script>
 
   <header class="site-header">
     <div class="site-header__inner">
@@ -186,9 +186,10 @@ See README.md for setup instructions.
 </div>
 
 <script>
-const XANO_BASE='YOUR_API_KEY_HERE';
-const XANO_KEY='YOUR_API_KEY_HERE';
-const MS_PUBLIC_KEY='YOUR_API_KEY_HERE';
+// Config injected at build time from environment variables
+const XANO_BASE = window.ENV?.XANO_BASE_URL || 'https://your-workspace.xano.io/api:your-group';
+const XANO_KEY = window.ENV?.XANO_API_KEY || '';
+const MS_PUBLIC_KEY = window.ENV?.MEMBERSTACK_PUBLIC_KEY || '';
 
 let memberstack=null,currentUser=null;
 
