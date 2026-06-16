@@ -25,6 +25,7 @@ for file in "${FILES[@]}"; do
         echo "Processing $file..."
         
         # Replace placeholder patterns with actual secret values
+        # Using | as delimiter to avoid conflicts with URLs containing /
         sed -i \
             -e "s|window\\.ENV\\?\\.XANO_BASE_URL || 'https://your-workspace.xano.io/api:your-group'|$XANO_BASE_URL|g" \
             -e "s|window\\.ENV\\?\\.XANO_API_KEY || ''|$XANO_API_KEY|g" \
