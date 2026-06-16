@@ -1,17 +1,12 @@
-name: Deploy to Cloudflare Pages
+name: Deploy to Cloudflare Workers
 
 on:
   push:
     branches: [main]
   workflow_dispatch:
 
-permissions:
-  contents: read
-  pages: write
-  id-token: write
-
 jobs:
-  build-and-deploy:
+  deploy:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -25,24 +20,20 @@ jobs:
       - name: Install Wrangler
         run: npm install -g wrangler
 
-      - name: Make build script executable
-        run: chmod +x build.sh
+      - name: Create wrangler.toml
+        run: |
+          cat > wrangler.toml << 'EOF'
+          name = "soccer-prediction-hub"
+          compatibility_date = "2025-06-01"
+          compatibility_flags = ["nodejs_compat"]
 
-      - name: Inject environment variables
-        run: ./build.sh
+          [site]
+          bucket = "."
+          exclude = [".github", ".git", "build.sh", "README.md"]
+          EOF
+
+      - name: Deploy static assets
+        run: npx wrangler deploy
         env:
-          XANO_BASE_URL: ${{ secrets.XANO_BASE_URL }}
-          XANO_API_KEY: ${{ secrets.XANO_API_KEY }}
-          MEMBERSTACK_PUBLIC_KEY: ${{ secrets.MEMBERSTACK_PUBLIC_KEY }}
-          AIRTABLE_BASE_ID: ${{ secrets.AIRTABLE_BASE_ID }}
-          AIRTABLE_API_KEY: ${{ secrets.AIRTABLE_API_KEY }}
-
-      - name: Deploy to Cloudflare Pages
-        uses: cloudflare/pages-action@v1
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          projectName: soccer-prediction-hub
-          directory: .
-          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
-          branch: main
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
