@@ -191,12 +191,35 @@ const XANO_BASE = window.ENV?.XANO_BASE_URL || 'https://your-workspace.xano.io/a
 const XANO_KEY = window.ENV?.XANO_API_KEY || '';
 const MS_PUBLIC_KEY = window.ENV?.MEMBERSTACK_PUBLIC_KEY || '';
 
+// DEBUG: Log injected values
+console.log('🔧 [DEBUG] XANO_BASE =', XANO_BASE);
+console.log('🔧 [DEBUG] XANO_KEY =', XANO_KEY ? XANO_KEY.substring(0, 20) + '...' : '(empty)');
+console.log('🔧 [DEBUG] MS_PUBLIC_KEY =', MS_PUBLIC_KEY);
+
 let memberstack=null,currentUser=null;
+
+// Show error in visible red box
+function showError(message) {
+  console.error('❌ Error:', message);
+  const errorBox = document.createElement('div');
+  errorBox.style.cssText = 'position:fixed;top:20px;right:20px;background:#fee2e2;border:2px solid #ef4444;color:#991b1b;padding:16px 24px;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.15);z-index:9999;max-width:500px;font-family:system-ui;font-size:14px;line-height:1.5;';
+  errorBox.innerHTML = '<strong>Error:</strong><br>' + message.replace(/\n/g, '<br>') + '<br><br><button onclick="this.parentElement.remove()" style="margin-top:8px;padding:6px 12px;background:#ef4444;color:white;border:none;border-radius:4px;cursor:pointer;">Dismiss</button>';
+  document.body.appendChild(errorBox);
+  setTimeout(() => errorBox.remove(), 30000);
+}
 
 async function xanoFetch(path,opts={}){
   const url=XANO_BASE+path,headers={'Authorization':'Bearer '+XANO_KEY,'Content-Type':'application/json',...opts.headers};
+  console.log('🌐 [DEBUG] Fetching:', url);
   const resp=await fetch(url,{...opts,headers});
-  if(!resp.ok)throw new Error((await resp.json().catch(()=>({}))).message||`HTTP ${resp.status}`);
+  console.log('🌐 [DEBUG] Response status:', resp.status);
+  if(!resp.ok) {
+    const text = await resp.text();
+    console.error('❌ Xano error response:', text);
+    let errMsg = `HTTP ${resp.status}`;
+    try { const err = JSON.parse(text); errMsg = err.message || errMsg; } catch { errMsg = text.substring(0, 200) || errMsg; }
+    throw new Error(errMsg);
+  }
   return resp.json();
 }
 
@@ -255,7 +278,11 @@ async function loadDashboard(){
     renderPremium();
     document.getElementById('loading-state').style.display='none';
     document.getElementById('dashboard-content').style.display='block';
-  }catch(e){console.error(e);showAuthRequired();}
+  }catch(e){
+    console.error('Dashboard load failed:', e);
+    showError('Dashboard load failed: ' + e.message);
+    showAuthRequired();
+  }
 }
 
 function renderStats(user){

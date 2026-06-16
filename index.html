@@ -307,6 +307,11 @@ See README.md for setup instructions.
     const XANO_KEY = window.ENV?.XANO_API_KEY || '';
     const MS_PUBLIC_KEY = window.ENV?.MEMBERSTACK_PUBLIC_KEY || '';
 
+    // DEBUG: Log injected values
+    console.log('🔧 [DEBUG] XANO_BASE =', XANO_BASE);
+    console.log('🔧 [DEBUG] XANO_KEY =', XANO_KEY ? XANO_KEY.substring(0, 20) + '...' : '(empty)');
+    console.log('🔧 [DEBUG] MS_PUBLIC_KEY =', MS_PUBLIC_KEY);
+
     // ============ STATE ============
     let currentUser = null;
     let currentCountry = '';
@@ -358,13 +363,33 @@ See README.md for setup instructions.
     // ============ XANO API ============
     async function xanoFetch(path, options = {}) {
       const url = XANO_BASE + path;
+      console.log('🌐 [DEBUG] Fetching:', url);
       const headers = { 'Authorization': 'Bearer ' + XANO_KEY, 'Content-Type': 'application/json', ...options.headers };
       const resp = await fetch(url, { ...options, headers });
+      console.log('🌐 [DEBUG] Response status:', resp.status);
       if (!resp.ok) {
-        const err = await resp.json().catch(() => ({ message: 'Request failed' }));
-        throw new Error(err.message || `HTTP ${resp.status}`);
+        const text = await resp.text();
+        console.error('❌ Xano error response:', text);
+        let errMsg = `HTTP ${resp.status}`;
+        try {
+          const err = JSON.parse(text);
+          errMsg = err.message || errMsg;
+        } catch {
+          errMsg = text.substring(0, 200) || errMsg;
+        }
+        throw new Error(errMsg);
       }
       return resp.json();
+    }
+
+    // Show error in visible red box
+    function showError(message) {
+      console.error('❌ Error:', message);
+      const errorBox = document.createElement('div');
+      errorBox.style.cssText = 'position:fixed;top:20px;right:20px;background:#fee2e2;border:2px solid #ef4444;color:#991b1b;padding:16px 24px;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.15);z-index:9999;max-width:500px;font-family:system-ui;font-size:14px;line-height:1.5;';
+      errorBox.innerHTML = '<strong>Error:</strong><br>' + message.replace(/\n/g, '<br>') + '<br><br><button onclick="this.parentElement.remove()" style="margin-top:8px;padding:6px 12px;background:#ef4444;color:white;border:none;border-radius:4px;cursor:pointer;">Dismiss</button>';
+      document.body.appendChild(errorBox);
+      setTimeout(() => errorBox.remove(), 30000);
     }
 
     async function loadLeaderboard() {
@@ -377,6 +402,7 @@ See README.md for setup instructions.
         leaderboardUpdated.textContent = 'Last updated: ' + new Date().toLocaleString();
       } catch (err) {
         console.error('Leaderboard load failed:', err);
+        showError('Leaderboard load failed: ' + err.message);
         leaderboardBody.innerHTML = '<tr><td colspan="6" style="padding: 24px; text-align: center; color: var(--color-error);">Failed to load leaderboard. <button class="btn btn--ghost btn--sm" onclick="loadLeaderboard()">Retry</button></td></tr>';
       } finally {
         refreshBtn.disabled = false;

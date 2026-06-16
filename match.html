@@ -131,16 +131,40 @@ const AIRTABLE_TOKEN='YOUR_API_KEY_HERE';
 
 let memberstack=null,currentUser=null,matchId=null,matchData=null;
 
+// Show error in visible red box
+function showError(message) {
+  console.error('❌ Error:', message);
+  const errorBox = document.createElement('div');
+  errorBox.style.cssText = 'position:fixed;top:20px;right:20px;background:#fee2e2;border:2px solid #ef4444;color:#991b1b;padding:16px 24px;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.15);z-index:9999;max-width:500px;font-family:system-ui;font-size:14px;line-height:1.5;';
+  errorBox.innerHTML = '<strong>Error:</strong><br>' + message.replace(/\n/g, '<br>') + '<br><br><button onclick="this.parentElement.remove()" style="margin-top:8px;padding:6px 12px;background:#ef4444;color:white;border:none;border-radius:4px;cursor:pointer;">Dismiss</button>';
+  document.body.appendChild(errorBox);
+  setTimeout(() => errorBox.remove(), 30000);
+}
+
 async function xanoFetch(path,opts={}){
   const url=XANO_BASE+path,headers={'Authorization':'Bearer '+XANO_KEY,'Content-Type':'application/json',...opts.headers};
+  console.log('🌐 [DEBUG] Fetching:', url);
   const resp=await fetch(url,{...opts,headers});
-  if(!resp.ok)throw new Error((await resp.json().catch(()=>({}))).message||`HTTP ${resp.status}`);
+  console.log('🌐 [DEBUG] Response status:', resp.status);
+  if(!resp.ok) {
+    const text = await resp.text();
+    console.error('❌ Xano error response:', text);
+    let errMsg = `HTTP ${resp.status}`;
+    try { const err = JSON.parse(text); errMsg = err.message || errMsg; } catch { errMsg = text.substring(0, 200) || errMsg; }
+    throw new Error(errMsg);
+  }
   return resp.json();
 }
 async function airtableFetch(path){
   const url='https://api.airtable.com/v0/'+AIRTABLE_BASE+path,headers={'Authorization':'Bearer '+AIRTABLE_TOKEN};
+  console.log('🌐 [DEBUG] Airtable fetching:', url);
   const resp=await fetch(url,{headers});
-  if(!resp.ok)throw new Error('Airtable error');
+  console.log('🌐 [DEBUG] Airtable status:', resp.status);
+  if(!resp.ok) {
+    const text = await resp.text();
+    console.error('❌ Airtable error:', text);
+    throw new Error(`Airtable HTTP ${resp.status}`);
+  }
   return resp.json();
 }
 
