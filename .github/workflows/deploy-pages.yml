@@ -1,4 +1,4 @@
-name: Deploy to Cloudflare Workers
+name: Deploy to Cloudflare Workers (Static Assets)
 
 on:
   push:
@@ -24,12 +24,11 @@ jobs:
         run: |
           cat > wrangler.toml << 'EOF'
           name = "soccer-prediction-hub"
-          compatibility_date = "2025-06-01"
-          compatibility_flags = ["nodejs_compat"]
-
-          [site]
-          bucket = "."
-          exclude = [".github", ".git", "build.sh", "README.md"]
+          compatibility_date = "2024-01-01"
+          
+          [assets]
+          directory = "."
+          exclude = [".github", ".git", "build.sh", "README.md", "*.md"]
           EOF
 
       - name: Deploy static assets
