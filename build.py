@@ -6,7 +6,6 @@ Python version - handles special characters in URLs better than sed.
 
 import os
 import sys
-import re
 
 # Required environment variables
 REQUIRED_VARS = [
@@ -43,18 +42,25 @@ def process_file(filepath):
     airtable_base = os.getenv("AIRTABLE_BASE_ID", "")
     airtable_key = os.getenv("AIRTABLE_API_KEY", "")
     
-    # Replacements - using string replace (no regex needed for simple patterns)
+    # Wrap all values in single quotes for JavaScript
+    xano_base_q = f"'{xano_base}'"
+    xano_key_q = f"'{xano_key}'"
+    ms_key_q = f"'{ms_key}'"
+    airtable_base_q = f"'{airtable_base}'"
+    airtable_key_q = f"'{airtable_key}'"
+    
+    # Replacements - replace the entire RHS of the assignment with quoted values
     replacements = {
-        # window.ENV?.VAR || 'fallback' patterns
-        "window.ENV?.XANO_BASE_URL || 'https://your-workspace.xano.io/api:your-group'": xano_base,
-        "window.ENV?.XANO_API_KEY || ''": xano_key,
-        "window.ENV?.MEMBERSTACK_PUBLIC_KEY || ''": ms_key,
-        "window.ENV?.AIRTABLE_BASE_ID || ''": airtable_base,
-        "window.ENV?.AIRTABLE_API_KEY || ''": airtable_key,
+        # window.ENV?.VAR || 'fallback' patterns -> replace with quoted value
+        "window.ENV?.XANO_BASE_URL || 'https://your-workspace.xano.io/api:your-group'": xano_base_q,
+        "window.ENV?.XANO_API_KEY || ''": xano_key_q,
+        "window.ENV?.MEMBERSTACK_PUBLIC_KEY || ''": ms_key_q,
+        "window.ENV?.AIRTABLE_BASE_ID || ''": airtable_base_q,
+        "window.ENV?.AIRTABLE_API_KEY || ''": airtable_key_q,
         
         # Direct placeholder patterns
-        "YOUR_MEMBERSTACK_PUBLIC_KEY": ms_key,
-        "YOUR_API_KEY_HERE": xano_base,  # Used in script tags
+        "YOUR_MEMBERSTACK_PUBLIC_KEY": ms_key_q,
+        "YOUR_API_KEY_HERE": xano_base_q,
     }
     
     # Apply all replacements
@@ -96,10 +102,17 @@ def verify_clean():
     return all_clean
 
 def main():
+    FILES = ["index.html", "match.html", "dashboard.html"]
+    
     print("🔧 Injecting environment variables into HTML files...")
     print("=" * 50)
     
-    check_env_vars()
+    # Check env vars
+    missing = [var for var in REQUIRED_VARS if not os.getenv(var)]
+    if missing:
+        print(f"❌ Missing required environment variables: {', '.join(missing)}")
+        sys.exit(1)
+    print("✅ All required environment variables present")
     print()
     
     for filepath in FILES:
