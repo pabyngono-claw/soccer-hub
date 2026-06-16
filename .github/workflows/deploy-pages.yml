@@ -18,7 +18,19 @@ jobs:
           node-version: '24'
 
       - name: Install Wrangler
-        run: npm install -g wrangler
+        run: npm install -g wrangler@latest
+
+      - name: Make build script executable
+        run: chmod +x build.sh
+
+      - name: Inject environment variables
+        run: ./build.sh
+        env:
+          XANO_BASE_URL: ${{ secrets.XANO_BASE_URL }}
+          XANO_API_KEY: ${{ secrets.XANO_API_KEY }}
+          MEMBERSTACK_PUBLIC_KEY: ${{ secrets.MEMBERSTACK_PUBLIC_KEY }}
+          AIRTABLE_BASE_ID: ${{ secrets.AIRTABLE_BASE_ID }}
+          AIRTABLE_API_KEY: ${{ secrets.AIRTABLE_API_KEY }}
 
       - name: Create wrangler.toml
         run: |
