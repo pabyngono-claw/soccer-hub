@@ -139,8 +139,8 @@ See README.md for setup instructions.
 <body>
   <!-- Config (generated at build time from environment variables) -->
   <script src="config.js"></script>
-  <!-- Memberstack DOM script -->
-  <script src="https://static.memberstack.com/scripts/v1/memberstack-dom.js" data-memberstack-app="YOUR_MEMBERSTACK_PUBLIC_KEY" async></script>
+  <!-- Memberstack DOM script (initialized programmatically after config loads) -->
+  <script src="https://static.memberstack.com/scripts/v1/memberstack-dom.js" async></script>
 
   <header class="site-header">
     <div class="site-header__inner">
@@ -228,7 +228,10 @@ async function xanoFetch(path,opts={}){
 
 async function initMemberstack(){
   await new Promise(r=>{if(window.$memberstackDom)return r();const c=setInterval(()=>{if(window.$memberstackDom){clearInterval(c);r();}},100);});
-  memberstack=window.$memberstackDom;await memberstack.init(MS_PUBLIC_KEY).catch(console.error);
+  memberstack=window.$memberstackDom;
+  // Initialize with key from config.js
+  const msKey = window.APP_CONFIG?.MEMBERSTACK_PUBLIC_KEY || MS_PUBLIC_KEY;
+  await memberstack.init(msKey).catch(console.error);
   const m=await memberstack.getCurrentMember();
   if(m){
     currentUser={id:m.id,email:m.auth?.email,username:m.customFields?.username,country_code:m.customFields?.country_code,is_premium:m.planConnections?.some(p=>p.active&&p.type==='PAID'),createdAt:m.createdAt};

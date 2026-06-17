@@ -186,8 +186,8 @@ See README.md for setup instructions.
 <body>
   <!-- Config (generated at build time from environment variables) -->
   <script src="config.js"></script>
-  <!-- Memberstack DOM script -->
-  <script src="https://static.memberstack.com/scripts/v1/memberstack-dom.js" data-memberstack-app="YOUR_MEMBERSTACK_PUBLIC_KEY" async></script>
+  <!-- Memberstack DOM script (initialized programmatically after config loads) -->
+  <script src="https://static.memberstack.com/scripts/v1/memberstack-dom.js" async></script>
 
   <header class="site-header" role="banner">
     <div class="site-header__inner">
@@ -459,7 +459,9 @@ See README.md for setup instructions.
         const check = setInterval(() => { if (window.$memberstackDom) { clearInterval(check); r(); } }, 100);
       });
       memberstack = window.$memberstackDom;
-      memberstack.init(MS_PUBLIC_KEY).catch(console.error);
+      // Initialize with key from config.js
+      const msKey = window.APP_CONFIG?.MEMBERSTACK_PUBLIC_KEY || MS_PUBLIC_KEY;
+      memberstack.init(msKey).catch(console.error);
       checkAuth();
     }
 
