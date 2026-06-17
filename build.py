@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # build.py - Inject environment variables into HTML files at build time.
+# force rebuild v2
 
 import os
 import sys
