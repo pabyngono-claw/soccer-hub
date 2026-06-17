@@ -364,7 +364,10 @@ See README.md for setup instructions.
     async function xanoFetch(path, options = {}) {
       const url = XANO_BASE + path;
       console.log('🌐 [DEBUG] Fetching:', url);
-      const headers = { 'Authorization': 'Bearer ' + XANO_KEY, 'Content-Type': 'application/json', ...options.headers };
+      const headers = { 'Content-Type': 'application/json', ...options.headers };
+      if (options.auth !== false) {
+        headers['Authorization'] = 'Bearer ' + XANO_KEY;
+      }
       const resp = await fetch(url, { ...options, headers });
       console.log('🌐 [DEBUG] Response status:', resp.status);
       if (!resp.ok) {
@@ -379,7 +382,9 @@ See README.md for setup instructions.
         }
         throw new Error(errMsg);
       }
-      return resp.json();
+      const data = await resp.json();
+      console.log('🌐 [DEBUG] Response data:', data);
+      return data;
     }
 
     // Show error in visible red box
@@ -397,7 +402,7 @@ See README.md for setup instructions.
         refreshBtn.disabled = true;
         refreshBtn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation: spin 1s linear infinite;"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>';
         const path = currentCountry ? `/leaderboard/country/${encodeURIComponent(currentCountry)}?limit=50` : '/leaderboard/global?limit=50';
-        const data = await xanoFetch(path);
+        const data = await xanoFetch(path, { auth: false });
         renderLeaderboard(data.items || []);
         leaderboardUpdated.textContent = 'Last updated: ' + new Date().toLocaleString();
       } catch (err) {
@@ -438,7 +443,7 @@ See README.md for setup instructions.
 
     async function loadCountries() {
       try {
-        const data = await xanoFetch('/leaderboard/global?limit=200');
+        const data = await xanoFetch('/leaderboard/global?limit=200', { auth: false });
         const codes = [...new Set((data.items || []).map(u => u.country_code).filter(Boolean))].sort();
         countryFilter.innerHTML = '<option value="">All Countries (Global)</option>' + codes.map(c => `<option value="${c}">${c}</option>`).join('');
       } catch (err) { console.error('Countries load failed:', err); }
