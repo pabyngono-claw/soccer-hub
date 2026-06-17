@@ -127,7 +127,7 @@ const XANO_BASE = window.ENV?.XANO_BASE_URL || 'https://your-workspace.xano.io/a
 const XANO_KEY = window.ENV?.XANO_API_KEY || '';
 const MS_PUBLIC_KEY = window.ENV?.MEMBERSTACK_PUBLIC_KEY || '';
 const AIRTABLE_BASE = window.ENV?.AIRTABLE_BASE_ID || '';
-const AIRTABLE_TOKEN='YOUR_API_KEY_HERE';
+const AIRTABLE_TOKEN = window.ENV?.AIRTABLE_API_KEY || '';
 
 let memberstack=null,currentUser=null,matchId=null,matchData=null;
 
