@@ -39,9 +39,6 @@ def process(fpath):
     c = c.replace("window.ENV?.AIRTABLE_BASE_ID || ''", ab_q)
     c = c.replace("window.ENV?.AIRTABLE_API_KEY || ''", ak_q)
     c = c.replace("YOUR_MEMBERSTACK_PUBLIC_KEY", mk_q)
-    c = c.replace("YOUR_API_KEY_HERE", xb_q)
-    c = c.replace("const AIRTABLE_TOKEN='***';", ak_q)
-    c = c.replace("const AIRTABLE_TOKEN=***", ak_q)
     
     if c != orig:
         with open(fpath, 'w', encoding='utf-8') as f:
@@ -51,10 +48,9 @@ def process(fpath):
         print("INFO: " + fpath + " no changes")
 
 def verify():
-    patterns = ["YOUR_MEMBERSTACK_PUBLIC_KEY", "YOUR_API_KEY_HERE", "window.ENV?.XANO_BASE_URL",
+    patterns = ["YOUR_MEMBERSTACK_PUBLIC_KEY", "window.ENV?.XANO_BASE_URL",
                 "window.ENV?.XANO_API_KEY", "window.ENV?.MEMBERSTACK_PUBLIC_KEY",
-                "window.ENV?.AIRTABLE_BASE_ID", "window.ENV?.AIRTABLE_API_KEY",
-                "const AIRTABLE_TOKEN='***';"]
+                "window.ENV?.AIRTABLE_BASE_ID", "window.ENV?.AIRTABLE_API_KEY"]
     ok = True
     for fpath in FILES:
         if os.path.exists(fpath):
