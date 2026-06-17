@@ -1,12 +1,16 @@
 #!/usr/bin/env python3
-# build.py - Inject environment variables into HTML files at build time.
-# force rebuild v2
+# build.py - Generate config.js with environment variables at build time.
 
 import os
 import sys
 
-REQUIRED_VARS = ["XANO_BASE_URL", "XANO_API_KEY", "MEMBERSTACK_PUBLIC_KEY", "AIRTABLE_BASE_ID", "AIRTABLE_API_KEY"]
-FILES = ["index.html", "match.html", "dashboard.html"]
+REQUIRED_VARS = [
+    "XANO_BASE_URL",
+    "XANO_API_KEY",
+    "MEMBERSTACK_PUBLIC_KEY",
+    "AIRTABLE_BASE_ID",
+    "AIRTABLE_API_KEY"
+]
 
 def check_env():
     missing = [v for v in REQUIRED_VARS if not os.getenv(v)]
@@ -15,79 +19,70 @@ def check_env():
         sys.exit(1)
     print("OK: All env vars present")
 
-def process(fpath):
-    print("Processing " + fpath + "...")
-    with open(fpath, 'r', encoding='utf-8') as f:
-        c = f.read()
-    orig = c
-    
+def generate_config_js():
     xb = os.getenv("XANO_BASE_URL", "")
     xk = os.getenv("XANO_API_KEY", "")
     mk = os.getenv("MEMBERSTACK_PUBLIC_KEY", "")
     ab = os.getenv("AIRTABLE_BASE_ID", "")
     ak = os.getenv("AIRTABLE_API_KEY", "")
-    
-    xb_q = "'" + xb + "'"
-    xk_q = "'" + xk + "'"
-    mk_q = "'" + mk + "'"
-    ab_q = "'" + ab + "'"
-    ak_q = "'" + ak + "'"
-    
-    # Build replacements manually to avoid dict syntax issues
-    c = c.replace("window.ENV?.XANO_BASE_URL || 'https://your-workspace.xano.io/api:your-group'", xb_q)
-    c = c.replace("window.ENV?.XANO_API_KEY || ''", xk_q)
-    c = c.replace("window.ENV?.MEMBERSTACK_PUBLIC_KEY || ''", mk_q)
-    c = c.replace("window.ENV?.AIRTABLE_BASE_ID || ''", ab_q)
-    c = c.replace("window.ENV?.AIRTABLE_API_KEY || ''", ak_q)
-    c = c.replace("YOUR_MEMBERSTACK_PUBLIC_KEY", mk_q)
-    
-    if c != orig:
-        with open(fpath, 'w', encoding='utf-8') as f:
-            f.write(c)
-        print("OK: " + fpath + " updated")
-    else:
-        print("INFO: " + fpath + " no changes")
 
-def verify():
-    patterns = ["YOUR_MEMBERSTACK_PUBLIC_KEY", "window.ENV?.XANO_BASE_URL",
-                "window.ENV?.XANO_API_KEY", "window.ENV?.MEMBERSTACK_PUBLIC_KEY",
-                "window.ENV?.AIRTABLE_BASE_ID", "window.ENV?.AIRTABLE_API_KEY"]
-    ok = True
-    for fpath in FILES:
-        if os.path.exists(fpath):
-            with open(fpath, 'r', encoding='utf-8') as f:
-                c = f.read()
-            found = [p for p in patterns if p in c]
-            if found:
-                print("WARNING: " + fpath + " has: " + ", ".join(found))
-                ok = False
-            else:
-                print("OK: " + fpath + " clean")
-    return ok
+    # Escape values for JavaScript (handle quotes, backslashes, newlines)
+    def js_escape(s):
+        return s.replace("\\", "\\\\").replace("'", "\\'").replace("\n", "\\n").replace("\r", "\\r")
+
+    xb = js_escape(xb)
+    xk = js_escape(xk)
+    mk = js_escape(mk)
+    ab = js_escape(ab)
+    ak = js_escape(ak)
+
+    config = f"""// Auto-generated at build time - DO NOT EDIT MANUALLY
+// Config values injected from environment variables
+window.APP_CONFIG = {{
+  XANO_BASE_URL: '{xb}',
+  XANO_API_KEY: '{xk}',
+  MEMBERSTACK_PUBLIC_KEY: '{mk}',
+  AIRTABLE_BASE_ID: '{ab}',
+  AIRTABLE_API_KEY: '{ak}'
+}};
+"""
+    with open("config.js", "w", encoding="utf-8") as f:
+        f.write(config)
+    print("OK: config.js generated")
+
+def verify_config():
+    if not os.path.exists("config.js"):
+        print("ERROR: config.js not found")
+        return False
+    with open("config.js", "r", encoding="utf-8") as f:
+        content = f.read()
+    # Check that no placeholder patterns remain
+    patterns = ["your-workspace.xano.io/api:your-group", "YOUR_", "window.ENV?"]
+    found = [p for p in patterns if p in content]
+    if found:
+        print("WARNING: config.js has placeholders: " + ", ".join(found))
+        return False
+    print("OK: config.js clean")
+    return True
 
 def main():
-    FILES = ["index.html", "match.html", "dashboard.html"]
-    print("Injecting env vars...")
+    print("Generating config.js...")
     print("=" * 50)
-    
+
     missing = [v for v in REQUIRED_VARS if not os.getenv(v)]
     if missing:
         print("ERROR: Missing " + ", ".join(missing))
         sys.exit(1)
     print("OK: All env vars present")
     print()
-    
-    for f in FILES:
-        if os.path.exists(f):
-            process(f)
-        else:
-            print("WARNING: " + f + " not found")
-    
+
+    generate_config_js()
+
     print()
     print("=" * 50)
     print("Verifying...")
-    clean = verify()
-    
+    clean = verify_config()
+
     if clean:
         print()
         print("SUCCESS!")

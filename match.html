@@ -103,6 +103,9 @@ See README.md for setup instructions.
   </style>
 </head>
 <body>
+  <!-- Config (generated at build time from environment variables) -->
+  <script src="config.js"></script>
+  <!-- Memberstack DOM script -->
   <script src="https://static.memberstack.com/scripts/v1/memberstack-dom.js" data-memberstack-app="YOUR_MEMBERSTACK_PUBLIC_KEY" async></script>
 
   <header class="site-header">
@@ -123,11 +126,12 @@ See README.md for setup instructions.
 <footer class="site-footer"><div class="site-footer__inner"><p>Soccer Prediction Hub &copy; 2026 — Built with Memberstack + Xano + Cloudflare Pages</p></div></footer>
 
 <script>
-const XANO_BASE = window.ENV?.XANO_BASE_URL || 'https://your-workspace.xano.io/api:your-group';
-const XANO_KEY = window.ENV?.XANO_API_KEY || '';
-const MS_PUBLIC_KEY = window.ENV?.MEMBERSTACK_PUBLIC_KEY || '';
-const AIRTABLE_BASE = window.ENV?.AIRTABLE_BASE_ID || '';
-const AIRTABLE_TOKEN = window.ENV?.AIRTABLE_API_KEY || '';
+// Config loaded from config.js (generated at build time from environment variables)
+const XANO_BASE = window.APP_CONFIG?.XANO_BASE_URL || 'https://your-workspace.xano.io/api:your-group';
+const XANO_KEY = window.APP_CONFIG?.XANO_API_KEY || '';
+const MS_PUBLIC_KEY = window.APP_CONFIG?.MEMBERSTACK_PUBLIC_KEY || '';
+const AIRTABLE_BASE = window.APP_CONFIG?.AIRTABLE_BASE_ID || '';
+const AIRTABLE_TOKEN = window.APP_CONFIG?.AIRTABLE_API_KEY || '';
 
 let memberstack=null,currentUser=null,matchId=null,matchData=null;
 

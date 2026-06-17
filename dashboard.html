@@ -137,6 +137,9 @@ See README.md for setup instructions.
   </style>
 </head>
 <body>
+  <!-- Config (generated at build time from environment variables) -->
+  <script src="config.js"></script>
+  <!-- Memberstack DOM script -->
   <script src="https://static.memberstack.com/scripts/v1/memberstack-dom.js" data-memberstack-app="YOUR_MEMBERSTACK_PUBLIC_KEY" async></script>
 
   <header class="site-header">
@@ -186,10 +189,10 @@ See README.md for setup instructions.
 </div>
 
 <script>
-// Config injected at build time from environment variables
-const XANO_BASE = window.ENV?.XANO_BASE_URL || 'https://your-workspace.xano.io/api:your-group';
-const XANO_KEY = window.ENV?.XANO_API_KEY || '';
-const MS_PUBLIC_KEY = window.ENV?.MEMBERSTACK_PUBLIC_KEY || '';
+// Config loaded from config.js (generated at build time from environment variables)
+const XANO_BASE = window.APP_CONFIG?.XANO_BASE_URL || 'https://your-workspace.xano.io/api:your-group';
+const XANO_KEY = window.APP_CONFIG?.XANO_API_KEY || '';
+const MS_PUBLIC_KEY = window.APP_CONFIG?.MEMBERSTACK_PUBLIC_KEY || '';
 
 // DEBUG: Log injected values
 console.log('🔧 [DEBUG] XANO_BASE =', XANO_BASE);
